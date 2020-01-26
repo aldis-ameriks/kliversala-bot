@@ -56,8 +56,8 @@ fn open_database_connection() -> rusqlite::Result<Connection> {
 fn init_post_processor() {
     thread::spawn(|| loop {
         match process_posts() {
-            Ok(()) => info!("Successfully processed posts"),
-            Err(e) => error!("Error occurred in post processor: {}", e),
+            Ok(()) => info!("successfully processed posts"),
+            Err(e) => error!("error occurred in post processor: {}", e),
         }
         thread::sleep(Duration::from_secs(3600));
     });
@@ -83,7 +83,7 @@ fn process_posts() -> Result<(), Box<dyn Error>> {
         for found_post in found_posts {
             match found_post {
                 Ok(_) => posts_count += 1,
-                Err(e) => error!("Post errored: {:#?}", e),
+                Err(e) => error!("post errored: {:#?}", e),
             }
         }
 
@@ -97,7 +97,7 @@ fn process_posts() -> Result<(), Box<dyn Error>> {
             )?;
 
             match send_message(post.text) {
-                Err(e) => error!("Failed to send message {}", e),
+                Err(e) => error!("failed to send message {}", e),
                 Ok(_) => continue,
             }
         }
@@ -119,9 +119,9 @@ fn init_bot() -> Result<(), Box<dyn Error>> {
                 if let Ok(_) =
                 conn.execute("DELETE FROM subscribers WHERE id = ?", params![msg.chat.id])
                 {
-                    info!("Deleted from db {}", msg.chat.id);
+                    info!("deleted from db {}", msg.chat.id);
                 } else {
-                    info!("Failed to delete from db {}", msg.chat.id);
+                    info!("failed to delete from db {}", msg.chat.id);
                 }
             };
 
@@ -139,9 +139,9 @@ fn init_bot() -> Result<(), Box<dyn Error>> {
                 if let Ok(_) =
                 conn.execute("INSERT INTO subscribers values (?)", params![msg.chat.id])
                 {
-                    info!("Inserted into db {}", msg.chat.id);
+                    info!("inserted into db {}", msg.chat.id);
                 } else {
-                    info!("Failed to insert into db {}", msg.chat.id);
+                    info!("failed to insert into db {}", msg.chat.id);
                 }
             };
 
