@@ -1,25 +1,29 @@
+use std::env;
 use std::error::Error;
 use std::thread;
 use std::time::Duration;
-use std::env;
 
-use futures::{stream::Stream, Future};
-use rusqlite::{params, Connection, NO_PARAMS};
+use futures::{Future, stream::Stream};
+use log::{info, debug, error};
+use rusqlite::{Connection, NO_PARAMS, params};
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
-use telebot::functions::*;
 use telebot::Bot;
+use telebot::functions::*;
 
 fn main() -> Result<(), Box<dyn Error>> {
+    env_logger::init();
     init_database()?;
     init_post_processor();
     init_bot()?;
+
     Ok(())
 }
 
 fn init_database() -> rusqlite::Result<()> {
     let conn = open_database_connection()?;
 
+    debug!("initializing database");
     conn.execute(
         "
             CREATE TABLE IF NOT EXISTS subscribers
@@ -41,7 +45,7 @@ fn init_database() -> rusqlite::Result<()> {
          ",
         NO_PARAMS,
     )?;
-
+    debug!("database initialized");
     Ok(())
 }
 
@@ -52,8 +56,8 @@ fn open_database_connection() -> rusqlite::Result<Connection> {
 fn init_post_processor() {
     thread::spawn(|| loop {
         match process_posts() {
-            Ok(()) => println!("Successfully processed posts"),
-            Err(e) => println!("Error occurred in post processor: {}", e),
+            Ok(()) => info!("Successfully processed posts"),
+            Err(e) => error!("Error occurred in post processor: {}", e),
         }
         thread::sleep(Duration::from_secs(3600));
     });
@@ -61,14 +65,14 @@ fn init_post_processor() {
 
 fn process_posts() -> Result<(), Box<dyn Error>> {
     let conn = open_database_connection()?;
-    let result = fetch_posts("https://mobile.facebook.com/kantineKliversala/posts/")?;
+    let posts = fetch_posts("https://mobile.facebook.com/kantineKliversala/posts/")?;
 
-    for entry in result {
-        println!("entry id: {}", entry.id);
+    for post in posts {
+        debug!("processing post_id: {}", post.id);
 
         let mut stmt = conn.prepare("SELECT * FROM posts WHERE id = ?;")?;
 
-        let found_posts = stmt.query_map(&[&entry.id], |row| {
+        let found_posts = stmt.query_map(&[&post.id], |row| {
             Ok(Post {
                 id: row.get(0)?,
                 text: row.get(1)?,
@@ -76,23 +80,24 @@ fn process_posts() -> Result<(), Box<dyn Error>> {
         })?;
 
         let mut posts_count = 0;
-        for post in found_posts {
-            match post {
+        for found_post in found_posts {
+            match found_post {
                 Ok(_) => posts_count += 1,
-                Err(e) => println!("Post errored: {:#?}", e),
+                Err(e) => error!("Post errored: {:#?}", e),
             }
         }
 
-        println!("posts_count: {}", posts_count);
+        debug!("posts_count: {}", posts_count);
 
         if posts_count == 0 {
+            info!("sending new post {}", post.id);
             conn.execute(
                 "INSERT INTO posts (id, text) values (?, ?)",
-                &[&entry.id, &entry.text],
+                &[&post.id, &post.text],
             )?;
 
-            match send_message(entry.text) {
-                Err(e) => println!("Failed to send message {}", e),
+            match send_message(post.text) {
+                Err(e) => error!("Failed to send message {}", e),
                 Ok(_) => continue,
             }
         }
@@ -108,15 +113,15 @@ fn init_bot() -> Result<(), Box<dyn Error>> {
     let stop_handle = bot
         .new_cmd("/stop")
         .and_then(|(bot, msg)| {
-            println!("{:#?}", msg.from.unwrap());
+            info!("{:#?}", msg.from.unwrap());
 
             if let Ok(conn) = open_database_connection() {
                 if let Ok(_) =
                 conn.execute("DELETE FROM subscribers WHERE id = ?", params![msg.chat.id])
                 {
-                    println!("Deleted from db {}", msg.chat.id);
+                    info!("Deleted from db {}", msg.chat.id);
                 } else {
-                    println!("Failed to delete from db {}", msg.chat.id);
+                    info!("Failed to delete from db {}", msg.chat.id);
                 }
             };
 
@@ -128,15 +133,15 @@ fn init_bot() -> Result<(), Box<dyn Error>> {
     let start_handle = bot
         .new_cmd("/start")
         .and_then(|(bot, msg)| {
-            println!("{:#?}", msg.from.unwrap());
+            info!("{:#?}", msg.from.unwrap());
 
             if let Ok(conn) = open_database_connection() {
                 if let Ok(_) =
                 conn.execute("INSERT INTO subscribers values (?)", params![msg.chat.id])
                 {
-                    println!("Inserted into db {}", msg.chat.id);
+                    info!("Inserted into db {}", msg.chat.id);
                 } else {
-                    println!("Failed to insert into db {}", msg.chat.id);
+                    info!("Failed to insert into db {}", msg.chat.id);
                 }
             };
 
@@ -175,13 +180,13 @@ fn fetch_posts(url: &str) -> Result<Vec<Post>, Box<dyn Error>> {
         let data_attribute = element.value().attr("data-ft").unwrap();
         let data_attribute: serde_json::Value = serde_json::from_str(data_attribute)?;
         let post_id = &data_attribute["mf_story_key"];
-        println!("{}", post_id);
+        debug!("post_id: {}", post_id);
 
         let mut inner_texts: Vec<String> = vec![];
         let inner_text_elements = element.select(&inner_text_selector);
         for inner_text_element in inner_text_elements {
             let inner_text = inner_text_element.text().collect::<Vec<_>>().join("");
-            println!("{:#?}", inner_text);
+            debug!("{:#?}", inner_text);
             inner_texts.push(inner_text);
         }
 
