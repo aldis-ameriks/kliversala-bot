@@ -235,7 +235,7 @@ fn fetch_posts(url: &str) -> Result<Vec<Post>, Box<dyn Error>> {
     Ok(result)
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Message {
     chat_id: i64,
     text: String,
@@ -249,6 +249,8 @@ fn send_message(chat_id: i64, text: String) -> Result<(), Box<dyn Error>> {
         text: String::from(text),
         disable_notification: true,
     };
+
+    info!("sending message: {:#?}", message);
 
     let _resp = reqwest::blocking::Client::builder().build()?.post(
         &format!("https://api.telegram.org/bot{}/sendMessage", token),
