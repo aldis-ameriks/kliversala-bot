@@ -4,7 +4,7 @@ use std::thread;
 use std::time::Duration;
 
 use futures::{Future, stream::Stream};
-use log::{info, debug, error};
+use log::{debug, error, info};
 use rusqlite::{Connection, NO_PARAMS, params};
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
@@ -96,9 +96,16 @@ fn process_posts() -> Result<(), Box<dyn Error>> {
                 &[&post.id, &post.text],
             )?;
 
-            match send_message(post.text) {
-                Err(e) => error!("failed to send message {}", e),
-                Ok(_) => continue,
+            let mut stmt = conn.prepare("SELECT id FROM subscribers;")?;
+            let subscribers = stmt.query_map(NO_PARAMS, |row| {
+                Ok(row.get(0)?)
+            })?;
+
+            for subscriber in subscribers {
+                match send_message(subscriber?, post.text.clone()) {
+                    Err(e) => error!("failed to send message {}", e),
+                    Ok(_) => continue,
+                }
             }
         }
     }
@@ -132,20 +139,47 @@ fn init_bot() -> Result<(), Box<dyn Error>> {
 
     let start_handle = bot
         .new_cmd("/start")
-        .and_then(|(bot, msg)| {
+        .and_then(|(_bot, msg)| {
             info!("{:#?}", msg.from.unwrap());
 
+            // TODO: Avoid using unwarp
             if let Ok(conn) = open_database_connection() {
                 if let Ok(_) =
                 conn.execute("INSERT INTO subscribers values (?)", params![msg.chat.id])
                 {
                     info!("inserted into db {}", msg.chat.id);
+                    match send_message(msg.chat.id, String::from("Subscribed")) {
+                        Ok(_) => debug!("sent subscribe message"),
+                        Err(e) => error!("failed to send subscribe message: {}", e)
+                    }
+
+                    info!("resending last post");
+                    let mut stmt = conn.prepare("SELECT id, text FROM posts ORDER BY sent_at DESC LIMIT 1;").unwrap();
+                    let found_posts = stmt.query_map(NO_PARAMS, |row| {
+                        Ok(Post {
+                            id: row.get(0).unwrap(),
+                            text: row.get(1).unwrap(),
+                        })
+                    }).unwrap();
+
+                    for found_post in found_posts {
+                        match found_post {
+                            Ok(post) => {
+                                info!("resending post: {}", post.id);
+                                match send_message(msg.chat.id, post.text) {
+                                    Ok(_) => info!("post resent successfully"),
+                                    Err(e) => error!("failed to resend post: {}", e)
+                                }
+                            }
+                            Err(e) => error!("found_post errored: {}", e)
+                        }
+                    }
                 } else {
                     info!("failed to insert into db {}", msg.chat.id);
                 }
             };
 
-            bot.message(msg.chat.id, String::from("Subscribed")).send()
+            Ok(())
         })
         .for_each(|_| Ok(()));
 
@@ -203,15 +237,15 @@ fn fetch_posts(url: &str) -> Result<Vec<Post>, Box<dyn Error>> {
 
 #[derive(Serialize, Deserialize)]
 struct Message {
-    chat_id: i32,
+    chat_id: i64,
     text: String,
     disable_notification: bool,
 }
 
-fn send_message(text: String) -> Result<(), Box<dyn Error>> {
+fn send_message(chat_id: i64, text: String) -> Result<(), Box<dyn Error>> {
     let token = env::var("TG_TOKEN")?;
     let message = Message {
-        chat_id: 900963193,
+        chat_id,
         text: String::from(text),
         disable_notification: true,
     };
