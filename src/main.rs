@@ -7,6 +7,7 @@ use log::{debug, error, info};
 use rusqlite::{Connection, NO_PARAMS};
 use scraper::{Html, Selector};
 use serde::{Serialize};
+use html2md::parse_html;
 
 fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
@@ -105,7 +106,7 @@ fn fetch_posts(url: &str) -> Result<Vec<Post>, Box<dyn Error>> {
     let res_text = resp.text()?;
     let document = Html::parse_document(&res_text);
     let selector =
-        Selector::parse("#recent > div:first-of-type > div:first-of-type > div").unwrap();
+        Selector::parse("#recent > div:first-of-type > div:first-of-type > div:first-of-type").unwrap();
     let inner_text_selector =
         Selector::parse("div:nth-child(1) > div:nth-child(2) > span").unwrap();
 
@@ -118,16 +119,21 @@ fn fetch_posts(url: &str) -> Result<Vec<Post>, Box<dyn Error>> {
 
         let mut inner_texts: Vec<String> = vec![];
         let inner_text_elements = element.select(&inner_text_selector);
+
         for inner_text_element in inner_text_elements {
-            let inner_text = inner_text_element.text().collect::<Vec<_>>().join("");
+            let inner_text = inner_text_element.inner_html();
             debug!("{:#?}", inner_text);
             inner_texts.push(inner_text);
         }
-
         let inner_text = inner_texts.concat();
+
+        let inner_text = parse_html(&inner_text);
+
+        debug!("parsed html into markdown: {}", inner_text);
+
         let post = Post {
             id: format!("{}", post_id).replace("\"", ""),
-            text: inner_text,
+            text: inner_text.replace("\\-", "-"),
         };
         result.push(post)
     }
