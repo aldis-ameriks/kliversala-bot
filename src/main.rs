@@ -106,7 +106,7 @@ fn fetch_posts(url: &str) -> Result<Vec<Post>, Box<dyn Error>> {
     let res_text = resp.text()?;
     let document = Html::parse_document(&res_text);
     let selector =
-        Selector::parse("#recent > div:first-of-type > div:first-of-type > div:first-of-type").unwrap();
+        Selector::parse("#recent > div:first-of-type > div:first-of-type > div").unwrap();
     let inner_text_selector =
         Selector::parse("div:nth-child(1) > div:nth-child(2) > span").unwrap();
 
