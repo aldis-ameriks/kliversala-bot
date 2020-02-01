@@ -32,7 +32,7 @@ fn process_posts() -> Result<(), Box<dyn Error>> {
     info!("found {} posts", posts.len());
 
     for post in posts {
-        match client.get_post(post.id.clone())? {
+        match client.get_post(&post.id)? {
             Some(_) => {
                 info!("post already sent: {}", &post.id);
                 continue;
