@@ -16,6 +16,7 @@ provider:
   versionFunctions: false
   environment:
     TG_TOKEN: ${ssm:TG_TOKEN~true}
+    TG_CHAT_ID: ${env:TG_CHAT_ID}
     TABLE_NAME: ${self:custom.tableName}
   iamRoleStatements:
     - Effect: Allow
