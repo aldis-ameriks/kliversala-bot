@@ -13,14 +13,15 @@ struct Message<'a> {
 
 pub fn send_message(text: &str) -> Result<(), Box<dyn Error>> {
     let token = env::var("TG_TOKEN")?;
+    let chat_id = env::var("TG_CHAT_ID")?;
     let message = Message {
-        chat_id: "900963193", // TODO: Move chat_id inside env vars
+        chat_id: chat_id.as_str(),
         text,
         disable_notification: true,
     };
 
-    let url = &format!("https://api.telegram.org/bot{}/sendMessage", token);
-    let resp: Response = Client::builder().build()?.post(url).json(&message).send()?;
+    let url = format!("https://api.telegram.org/bot{}/sendMessage", token);
+    let resp: Response = Client::builder().build()?.post(&url).json(&message).send()?;
 
     if resp.status().is_success() {
         Ok(())
