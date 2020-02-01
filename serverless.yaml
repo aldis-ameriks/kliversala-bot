@@ -16,14 +16,14 @@ provider:
   versionFunctions: false
   environment:
     TG_TOKEN: ${ssm:TG_TOKEN~true}
-    TG_CHAT_ID: ${env:TG_CHAT_ID}
+    TG_CHAT_ID: ${ssm:TG_CHAT_ID}
     TABLE_NAME: ${self:custom.tableName}
   iamRoleStatements:
     - Effect: Allow
       Action:
         - dynamodb:GetItem
         - dynamodb:PutItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.POSTS_TABLE}"
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.TABLE_NAME}"
 
 package:
   individually: true
