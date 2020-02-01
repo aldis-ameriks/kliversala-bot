@@ -1,0 +1,18 @@
+service: kliversala-bot
+provider:
+  name: aws
+  runtime: rust
+  memorySize: 128
+  region: eu-west-1
+  environment:
+    TG_TOKEN: ${env:TG_TOKEN}
+
+package:
+  individually: true
+
+plugins:
+  - serverless-rust
+
+functions:
+  kliversala-bot:
+    handler: kliversala-bot

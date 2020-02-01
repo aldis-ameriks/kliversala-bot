@@ -1,4 +1,7 @@
 /.idea
+/.serverless
 /target
+/node_modules
 **/*.rs.bk
 /kliversala.db
+/log.txt
