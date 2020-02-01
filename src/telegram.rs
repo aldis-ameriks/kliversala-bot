@@ -12,8 +12,8 @@ struct Message<'a> {
 }
 
 pub fn send_message(text: &str) -> Result<(), Box<dyn Error>> {
-    let token = env::var("TG_TOKEN")?;
-    let chat_id = env::var("TG_CHAT_ID")?;
+    let token = env::var("TG_TOKEN").expect("Missing TG_TOKEN env var");
+    let chat_id = env::var("TG_CHAT_ID").expect("Missing TG_CHAT_ID env var");
     let message = Message {
         chat_id: chat_id.as_str(),
         text,
