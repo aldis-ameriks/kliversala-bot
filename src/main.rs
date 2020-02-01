@@ -5,7 +5,7 @@ use log::{error, info};
 use log::Level;
 use serde_json::Value;
 
-use db::{get_post, put_post};
+use db::Client;
 use posts::fetch_posts;
 use telegram::send_message;
 
@@ -27,11 +27,12 @@ fn handler(event: Value, _: Context) -> Result<Value, HandlerError> {
 }
 
 fn process_posts() -> Result<(), Box<dyn Error>> {
+    let client = Client::new();
     let posts = fetch_posts("https://mobile.facebook.com/kantineKliversala/posts/")?;
     info!("found {} posts", posts.len());
 
     for post in posts {
-        match get_post(post.id.clone())? {
+        match client.get_post(post.id.clone())? {
             Some(_) => {
                 info!("post already sent: {}", &post.id);
                 continue;
@@ -42,7 +43,7 @@ fn process_posts() -> Result<(), Box<dyn Error>> {
                 match send_message(&post.text) {
                     Err(e) => error!("failed to send message {}", e),
                     Ok(()) => {
-                        put_post(&post)?;
+                        client.put_post(&post)?;
                         continue;
                     }
                 }
