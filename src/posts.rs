@@ -26,7 +26,7 @@ pub fn fetch_posts(url: &str) -> Result<Vec<Post>, Box<dyn Error>> {
     let selector =
         Selector::parse("#recent > div:first-of-type > div:first-of-type > div").unwrap();
     let inner_text_selector =
-        Selector::parse("div:first-of-type > div:not(:first-of-type)").unwrap();
+        Selector::parse("div:first-of-type > div:nth-child(2) > span").unwrap();
 
     let mut result: Vec<Post> = Vec::new();
     for element in document.select(&selector) {

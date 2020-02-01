@@ -5,20 +5,13 @@ use log::{error, info};
 use log::Level;
 use serde_json::Value;
 
+use db::{get_post, put_post};
 use posts::fetch_posts;
 use telegram::send_message;
 
 mod posts;
 mod telegram;
-
-//fn main() {
-//    simple_logger::init_with_level(Level::Info).unwrap();
-//
-//    match process_posts() {
-//        Ok(()) => info!("successfully processed posts"),
-//        Err(e) => error!("error occurred in post processor: {}", e),
-//    }
-//}
+mod db;
 
 fn main() {
     simple_logger::init_with_level(Level::Info).unwrap();
@@ -38,16 +31,21 @@ fn process_posts() -> Result<(), Box<dyn Error>> {
     info!("found {} posts", posts.len());
 
     for post in posts {
-        // TODO: Verify if post has already been sent
-
-        if post.id == "2465890140339822" {
-            info!("sending notification for post: {:#?}", post);
-            match send_message(post.text.clone()) {
-                Err(e) => error!("failed to send message {}", e),
-                Ok(()) => {
-                    // TODO: Save sent post in db
-                    continue
-                },
+        match get_post(post.id.clone())? {
+            Some(_) => {
+                info!("post already sent: {}", &post.id);
+                continue;
+            }
+            None => {
+                info!("post is not already sent: {}", &post.id);
+                info!("sending notification for post: {:#?}", post);
+                match send_message(post.text.clone()) {
+                    Err(e) => error!("failed to send message {}", e),
+                    Ok(()) => {
+                        put_post(&post)?;
+                        continue;
+                    }
+                }
             }
         }
     }

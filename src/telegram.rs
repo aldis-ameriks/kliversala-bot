@@ -14,7 +14,7 @@ struct Message {
 pub fn send_message(text: String) -> Result<(), Box<dyn Error>> {
     let token = env::var("TG_TOKEN")?;
     let message = Message {
-        chat_id: String::from("900963193"), // TODO: Move chat_id inside env vars
+        chat_id: String::from("@kliversala"), // TODO: Move chat_id inside env vars
         text: String::from(text),
         disable_notification: true,
     };

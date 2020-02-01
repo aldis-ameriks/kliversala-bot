@@ -1,18 +1,65 @@
 service: kliversala-bot
+
+custom:
+  tableName: 'posts-${self:provider.stage}'
+  dynamodb:
+    start:
+      migrate: true
+
 provider:
   name: aws
   runtime: rust
   memorySize: 128
+  timeout: 20
   region: eu-west-1
+  stage: dev
+  versionFunctions: false
   environment:
-    TG_TOKEN: ${env:TG_TOKEN}
+    TG_TOKEN: ${ssm:TG_TOKEN~true}
+    POSTS_TABLE: ${self:custom.tableName}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.POSTS_TABLE}"
 
 package:
   individually: true
 
-plugins:
-  - serverless-rust
-
 functions:
   kliversala-bot:
     handler: kliversala-bot
+    events:
+      - schedule: cron(30 * * * ? *)
+
+resources:
+  Resources:
+    PostsDynamoDBTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.tableName}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: text
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: text
+            KeySchema:
+              - AttributeName: text
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+plugins:
+  - serverless-rust
