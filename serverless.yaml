@@ -16,7 +16,7 @@ provider:
   versionFunctions: false
   environment:
     TG_TOKEN: ${ssm:TG_TOKEN~true}
-    POSTS_TABLE: ${self:custom.tableName}
+    TABLE_NAME: ${self:custom.tableName}
   iamRoleStatements:
     - Effect: Allow
       Action:
