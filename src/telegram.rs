@@ -5,17 +5,17 @@ use reqwest::blocking::{Client, Response};
 use serde::Serialize;
 
 #[derive(Serialize)]
-struct Message {
-    chat_id: String,
-    text: String,
+struct Message<'a> {
+    chat_id: &'a str,
+    text: &'a str,
     disable_notification: bool,
 }
 
-pub fn send_message(text: String) -> Result<(), Box<dyn Error>> {
+pub fn send_message(text: &str) -> Result<(), Box<dyn Error>> {
     let token = env::var("TG_TOKEN")?;
     let message = Message {
-        chat_id: String::from("@kliversala"), // TODO: Move chat_id inside env vars
-        text: String::from(text),
+        chat_id: "900963193", // TODO: Move chat_id inside env vars
+        text,
         disable_notification: true,
     };
 

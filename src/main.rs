@@ -39,7 +39,7 @@ fn process_posts() -> Result<(), Box<dyn Error>> {
             None => {
                 info!("post is not already sent: {}", &post.id);
                 info!("sending notification for post: {:#?}", post);
-                match send_message(post.text.clone()) {
+                match send_message(&post.text) {
                     Err(e) => error!("failed to send message {}", e),
                     Ok(()) => {
                         put_post(&post)?;
