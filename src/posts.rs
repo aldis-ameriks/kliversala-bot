@@ -35,6 +35,10 @@ pub fn fetch_posts(url: &str) -> Result<Vec<Post>, Box<dyn Error>> {
         let post_id = &data_attribute["mf_story_key"];
         debug!("post_id: {}", post_id);
 
+        if post_id == &Value::Null {
+            continue;
+        }
+
         let mut inner_texts: Vec<String> = Vec::new();
         let inner_text_elements = element.select(&inner_text_selector);
 
