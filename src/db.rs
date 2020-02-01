@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::env;
 use std::error::Error;
 
-use rusoto_core::Region;
-use rusoto_dynamodb::{AttributeValue, DynamoDb, DynamoDbClient, GetItemInput, PutItemInput};
+use rusoto_core::{Region, RusotoError};
+use rusoto_dynamodb::{AttributeValue, DynamoDb, DynamoDbClient, GetItemError, GetItemInput, PutItemError, PutItemInput};
 
 use crate::posts::Post;
 
@@ -19,7 +19,7 @@ impl Client {
         Client { client, table_name }
     }
 
-    pub fn get_post(&self, id: String) -> Result<Option<String>, Box<dyn Error>> {
+    pub fn get_post(&self, id: String) -> Result<Option<String>, RusotoError<GetItemError>> {
         let mut query_key: HashMap<String, AttributeValue> = HashMap::new();
         query_key.insert(String::from("id"), AttributeValue { s: Some(id.clone()), ..Default::default() });
         let get_item_input = GetItemInput { table_name: self.table_name.clone(), key: query_key, ..GetItemInput::default() };
@@ -36,12 +36,12 @@ impl Client {
             },
             Err(error) => {
                 println!("get_item: Error: {:?}", error);
-                Err(error.to_string().into())
+                Err(error)
             }
         }
     }
 
-    pub fn put_post(&self, post: &Post) -> Result<(), Box<dyn Error>> {
+    pub fn put_post(&self, post: &Post) -> Result<(), RusotoError<PutItemError>> {
         let mut query_key: HashMap<String, AttributeValue> = HashMap::new();
         query_key.insert(String::from("id"), AttributeValue { s: Some(String::from(&post.id)), ..Default::default() });
         query_key.insert(String::from("text"), AttributeValue { s: Some(String::from(&post.text)), ..Default::default() });
@@ -54,7 +54,7 @@ impl Client {
             }
             Err(error) => {
                 println!("put_item: Error: {:?}", error);
-                Err(error.to_string().into())
+                Err(error)
             }
         }
     }
