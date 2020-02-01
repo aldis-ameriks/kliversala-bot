@@ -24,7 +24,7 @@ impl Client {
         query_key.insert(String::from("id"), AttributeValue { s: Some(id.clone()), ..Default::default() });
         let get_item_input = GetItemInput { table_name: self.table_name.clone(), key: query_key, ..GetItemInput::default() };
         match self.client.get_item(get_item_input).sync() {
-            Ok(output) => return match output.item {
+            Ok(output) => match output.item {
                 Some(item) => {
                     println!("get_item: OK: {:#?}", item);
                     Ok(Some(id.clone()))
