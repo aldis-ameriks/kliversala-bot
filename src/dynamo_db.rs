@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::env;
 
 use log::{error, info};
 use rusoto_core::{Region, RusotoError};
@@ -16,8 +15,7 @@ pub struct DynamoClient {
 }
 
 impl DynamoClient {
-    pub fn new() -> DynamoClient {
-        let table_name = env::var("TABLE_NAME").expect("Missing TABLE_NAME env var");
+    pub fn new(table_name: String) -> DynamoClient {
         let client = DynamoDbClient::new(Region::EuWest1);
         DynamoClient { client, table_name }
     }
