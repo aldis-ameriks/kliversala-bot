@@ -88,6 +88,12 @@ mod tests {
     const CHAT_ID: &str = "123";
 
     #[test]
+    fn correct_domain() {
+        let telegram_client = TelegramClient::new(String::from(TOKEN), String::from(CHAT_ID));
+        assert_eq!(telegram_client.domain, "https://api.telegram.org");
+    }
+
+    #[test]
     fn send_message_success() {
         let url = &server_url();
 
