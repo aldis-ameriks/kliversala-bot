@@ -1,63 +1,80 @@
 use std::error::Error;
 
 use html2md::parse_html;
-use log::{debug};
+use log::{debug, info};
 use scraper::{Html, Selector};
 
 #[derive(Debug)]
 pub struct Post {
     pub id: String,
     pub text: String,
+    pub images: Vec<String>,
 }
 
-pub fn fetch_posts(url: &str) -> Result<Vec<Post>, Box<dyn Error>> {
+const POSTS_SELECTOR: &str = "#pagelet_timeline_main_column > div:first-of-type > div:nth-child(2) > div:first-of-type > div";
+const IMAGE_CONTAINER_SELECTOR: &str = concat!(
+"#pagelet_timeline_main_column > div:first-of-type > div:nth-child(2) > div:first-of-type > div",
+" > div > div > div > div > div > div > div:not(:nth-child(1))"
+);
+const ID_SELECTOR: &str = r#"div[data-testid="story-subtitle"]"#;
+const TEXT_SELECTOR: &str = r#"div[data-testid="post_message"]"#;
+const IMAGE_SELECTOR: &str = "img";
+
+pub fn fetch_posts() -> Result<Vec<Post>, Box<dyn Error>> {
+    let url = "https://www.facebook.com/pg/kantineKliversala/posts/";
     let resp = reqwest::blocking::Client::builder()
         .build()?
         .get(url)
         .header("user-agent", "rusty")
         .send()?;
-
-    // TODO: Avoid using panicky assert
     assert!(resp.status().is_success());
-
     let res_text = resp.text()?;
-    let document = Html::parse_document(&res_text);
-    // TODO: Avoid using panicky unwraps
-    let selector =
-        Selector::parse("#recent > div:first-of-type > div:first-of-type > div").unwrap();
-    let inner_text_selector =
-        Selector::parse("div:first-of-type > div:nth-child(2) > span").unwrap();
-
     let mut result: Vec<Post> = Vec::new();
-    for element in document.select(&selector) {
-        let data_attribute = element.value().attr("data-ft").unwrap();
-        let data_attribute: serde_json::Value = serde_json::from_str(data_attribute)?;
-        let post_id = &data_attribute["mf_story_key"];
-        debug!("post_id: {}", post_id);
 
-        if post_id == &Value::Null {
+    let document = Html::parse_document(&res_text);
+    let posts_selector = Selector::parse(POSTS_SELECTOR).unwrap();
+    let id_selector = Selector::parse(ID_SELECTOR).unwrap();
+    let text_selector = Selector::parse(TEXT_SELECTOR).unwrap();
+    let image_container_selector = Selector::parse(IMAGE_CONTAINER_SELECTOR).unwrap();
+    let image_selector = Selector::parse(IMAGE_SELECTOR).unwrap();
+
+    for post in document.select(&posts_selector) {
+        let mut post_id = "";
+        for id_element in post.select(&id_selector) {
+            post_id = id_element.value().id().unwrap();
+        }
+
+        info!("post_id: {}", post_id);
+        if post_id == "" {
             continue;
         }
 
-        let mut inner_texts: Vec<String> = Vec::new();
-        let inner_text_elements = element.select(&inner_text_selector);
+        let mut text_parts: Vec<String> = Vec::new();
 
-        for inner_text_element in inner_text_elements {
-            let inner_text = inner_text_element.inner_html();
-            debug!("{:#?}", inner_text);
-            inner_texts.push(inner_text);
+        for text in post.select(&text_selector) {
+            text_parts.push(text.inner_html());
         }
-        let inner_text = inner_texts.concat();
+        let text = text_parts.concat();
+        let parsed_text = parse_html(&text);
 
-        let inner_text = parse_html(&inner_text);
+        let mut images: Vec<String> = Vec::new();
+        for img_container in post.select(&image_container_selector) {
+            for img_element in img_container.select(&image_selector) {
+                let img_src = img_element.value().attr("src").unwrap();
+                info!("img src: {}", img_src);
+                images.push(String::from(img_src));
+            }
+        }
 
-        debug!("parsed html into markdown: {}", inner_text);
+        debug!("parsed html into markdown: {}", parsed_text);
 
         let post = Post {
             id: format!("{}", post_id).replace("\"", ""),
-            text: inner_text.replace("\\-", "-"),
+            text: parsed_text.replace("\\-", "-"),
+            images,
         };
-        result.push(post)
+
+        result.push(post);
     }
 
     Ok(result)
