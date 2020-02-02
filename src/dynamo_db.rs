@@ -10,16 +10,16 @@ use rusoto_dynamodb::{
 
 use crate::posts::Post;
 
-pub struct Client {
+pub struct DynamoClient {
     client: DynamoDbClient,
     table_name: String,
 }
 
-impl Client {
-    pub fn new() -> Client {
+impl DynamoClient {
+    pub fn new() -> DynamoClient {
         let table_name = env::var("TABLE_NAME").expect("Missing TABLE_NAME env var");
         let client = DynamoDbClient::new(Region::EuWest1);
-        Client { client, table_name }
+        DynamoClient { client, table_name }
     }
 
     pub fn get_post<'a>(&self, id: &'a str) -> Result<Option<&'a str>, RusotoError<GetItemError>> {

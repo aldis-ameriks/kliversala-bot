@@ -6,11 +6,11 @@ use log::Level;
 use log::{error, info};
 use serde_json::Value;
 
-use db::Client;
+use dynamo_db::DynamoClient;
 use posts::fetch_posts;
 use telegram::TelegramClient;
 
-mod db;
+mod dynamo_db;
 mod posts;
 mod telegram;
 
@@ -31,17 +31,17 @@ fn process_posts() -> Result<(), Box<dyn Error>> {
     let token = env::var("TG_TOKEN").expect("Missing TG_TOKEN env var");
     let chat_id = env::var("TG_CHAT_ID").expect("Missing TG_CHAT_ID env var");
 
-    let client = Client::new();
+    let dynamo_client = DynamoClient::new();
     let telegram_client = TelegramClient::new(token, chat_id);
 
     let posts = fetch_posts()?;
     info!("found {} posts", posts.len());
 
     for post in posts {
-        if let None = client.get_post(&post.id)? {
+        if let None = dynamo_client.get_post(&post.id)? {
             info!("sending notification for post: {:?}", post);
             telegram_client.send_message(&post.text)?;
-            client.put_post(&post)?;
+            dynamo_client.put_post(&post)?;
             for image in post.images {
                 telegram_client.send_image(&image)?;
             }
