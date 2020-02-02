@@ -21,7 +21,7 @@ fn main() {
 fn handler(event: Value, _: Context) -> Result<Value, HandlerError> {
     match process_posts() {
         Ok(()) => info!("successfully processed posts"),
-        Err(e) => error!("error occurred in post processor: {}", e),
+        Err(e) => error!("error occurred while processing posts: {}", e),
     }
     Ok(event)
 }
@@ -36,11 +36,11 @@ fn process_posts() -> Result<(), Box<dyn Error>> {
             info!("sending notification for post: {:?}", post);
             send_message(&post.text)?;
             client.put_post(&post)?;
-            for image in &post.images {
+            for image in post.images {
                 send_image(&image)?;
             }
         } else {
-            info!("post already sent: {}", &post.id)
+            info!("post is already sent: {}", &post.id)
         }
     }
 
