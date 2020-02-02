@@ -47,3 +47,22 @@ pub fn send_image(url: &str) -> Result<(), Box<dyn Error>> {
         Err(resp.text()?.into())
     }
 }
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic(expected = "Missing TG_TOKEN env var")]
+    fn send_message_missing_token() {
+        send_message("message").unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "Missing TG_TOKEN env var")]
+    fn send_image_missing_token() {
+        send_image("image url").unwrap();
+    }
+}
