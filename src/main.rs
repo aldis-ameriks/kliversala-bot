@@ -14,7 +14,7 @@ mod posts;
 mod telegram;
 
 fn main() {
-    simple_logger::init_with_level(Level::Info).unwrap();
+    simple_logger::init_with_level(Level::Info).expect("Failed to init logger");
     lambda!(handler)
 }
 
@@ -32,20 +32,15 @@ fn process_posts() -> Result<(), Box<dyn Error>> {
     info!("found {} posts", posts.len());
 
     for post in posts {
-        match client.get_post(&post.id)? {
-            Some(_) => info!("post already sent: {}", &post.id),
-            None => {
-                info!("sending notification for post: {:?}", post);
-                match send_message(&post.text) {
-                    Err(e) => error!("failed to send message {}", e),
-                    Ok(()) => {
-                        client.put_post(&post)?;
-                        for image in &post.images {
-                            send_image(&image)?;
-                        }
-                    }
-                }
+        if let None = client.get_post(&post.id)? {
+            info!("sending notification for post: {:?}", post);
+            send_message(&post.text)?;
+            client.put_post(&post)?;
+            for image in &post.images {
+                send_image(&image)?;
             }
+        } else {
+            info!("post already sent: {}", &post.id)
         }
     }
 
