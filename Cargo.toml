@@ -17,3 +17,6 @@ html2md = "0.2.9"
 lambda_runtime = "0.2.1"
 rusoto_core = "0.42.0"
 rusoto_dynamodb = "0.42.0"
+
+[dev-dependencies]
+mockito = "0.23.0"
