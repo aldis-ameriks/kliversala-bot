@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::env;
 
+use log::{error, info};
 use rusoto_core::{Region, RusotoError};
 use rusoto_dynamodb::{AttributeValue, DynamoDb, DynamoDbClient, GetItemError, GetItemInput, PutItemError, PutItemInput};
 
@@ -24,17 +25,17 @@ impl Client {
         let get_item_input = GetItemInput { table_name: self.table_name.clone(), key: query_key, ..GetItemInput::default() };
         match self.client.get_item(get_item_input).sync() {
             Ok(output) => match output.item {
-                Some(item) => {
-                    println!("get_item: OK: {:#?}", item);
+                Some(_) => {
+                    info!("get_item: OK(id: {})", id);
                     Ok(Some(id))
                 }
                 None => {
-                    println!("get_item: item {} not found", id);
+                    info!("get_item: item {} not found", id);
                     Ok(None)
                 }
             },
             Err(error) => {
-                println!("get_item: Error: {:?}", error);
+                error!("get_item: Error: {:?}", error);
                 Err(error)
             }
         }
@@ -48,11 +49,11 @@ impl Client {
 
         match self.client.put_item(put_item_input).sync() {
             Ok(_) => {
-                println!("put_item: OK");
+                info!("put_item: OK(id: {})", post.id);
                 Ok(())
             }
             Err(error) => {
-                println!("put_item: Error: {:?}", error);
+                error!("put_item: Error: {:?}", error);
                 Err(error)
             }
         }
