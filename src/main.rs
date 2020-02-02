@@ -50,7 +50,7 @@ fn process_posts() -> Result<(), Box<dyn Error>> {
                 telegram_client.send_image(&image)?;
             }
         } else {
-            info!("post is already sent: {}", &post.id)
+            info!("post is already sent: {}", &post.id);
         }
     }
 
