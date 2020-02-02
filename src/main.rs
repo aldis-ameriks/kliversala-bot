@@ -16,11 +16,7 @@ mod telegram;
 
 fn main() {
     simple_logger::init_with_level(Level::Info).expect("Failed to init logger");
-    lambda!(handler)
-    //    match process_posts() {
-    //        Ok(()) => info!("successfully processed posts"),
-    //        Err(e) => error!("error occurred while processing posts: {}", e),
-    //    }
+    lambda!(handler);
 }
 
 fn handler(event: Value, _: Context) -> Result<Value, HandlerError> {
