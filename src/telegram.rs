@@ -48,6 +48,7 @@ impl TelegramClient {
         };
 
         let url = format!("{}/bot{}/sendMessage", self.domain, self.token);
+        // TODO: Refactor into async client
         let resp: Response = Client::builder()
             .build()?
             .post(&url)
@@ -68,6 +69,7 @@ impl TelegramClient {
             disable_notification: true,
         };
         let url = format!("{}/bot{}/sendPhoto", self.domain, self.token);
+        // TODO: Refactor into async client
         let resp: Response = Client::builder().build()?.post(&url).json(&image).send()?;
 
         if resp.status().is_success() {
