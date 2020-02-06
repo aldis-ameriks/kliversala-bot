@@ -45,10 +45,12 @@ pub fn fetch_posts() -> Result<Vec<Post>, Box<dyn Error>> {
             post_id = id_element.value().id().unwrap();
         }
 
-        info!("post_id: {}", post_id);
         if post_id == "" {
             continue;
         }
+
+        let post_id: &str = post_id.split(";").collect::<Vec<&str>>()[1];
+        info!("post_id: {}", post_id);
 
         let mut text_parts: Vec<String> = Vec::new();
 
