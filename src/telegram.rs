@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use reqwest::blocking::{Client, Response};
+use reqwest::{Client, Response};
 use serde::Serialize;
 
 pub struct TelegramClient {
@@ -32,6 +32,7 @@ impl TelegramClient {
         }
     }
 
+    #[allow(dead_code)]
     pub fn new_with(token: String, chat_id: String, domain: String) -> TelegramClient {
         TelegramClient {
             token,
@@ -40,7 +41,7 @@ impl TelegramClient {
         }
     }
 
-    pub fn send_message(&self, text: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn send_message(&self, text: &str) -> Result<(), Box<dyn Error>> {
         let message = Message {
             chat_id: &self.chat_id,
             text,
@@ -49,20 +50,16 @@ impl TelegramClient {
 
         let url = format!("{}/bot{}/sendMessage", self.domain, self.token);
         // TODO: Refactor into async client
-        let resp: Response = Client::builder()
-            .build()?
-            .post(&url)
-            .json(&message)
-            .send()?;
+        let resp: Response = Client::new().post(&url).json(&message).send().await?;
 
         if resp.status().is_success() {
             Ok(())
         } else {
-            Err(resp.text()?.into())
+            Err(resp.text().await?.into())
         }
     }
 
-    pub fn send_image(&self, url: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn send_image(&self, url: &str) -> Result<(), Box<dyn Error>> {
         let image = Image {
             chat_id: &self.chat_id,
             photo: url,
@@ -70,12 +67,12 @@ impl TelegramClient {
         };
         let url = format!("{}/bot{}/sendPhoto", self.domain, self.token);
         // TODO: Refactor into async client
-        let resp: Response = Client::builder().build()?.post(&url).json(&image).send()?;
+        let resp: Response = Client::new().post(&url).json(&image).send().await?;
 
         if resp.status().is_success() {
             Ok(())
         } else {
-            Err(resp.text()?.into())
+            Err(resp.text().await?.into())
         }
     }
 }

@@ -2,7 +2,7 @@ use std::error::Error;
 
 use html2md::parse_html;
 use log::{debug, info};
-use reqwest::blocking::Client;
+use reqwest::Client;
 use scraper::{Html, Selector};
 
 #[derive(Debug)]
@@ -14,22 +14,22 @@ pub struct Post {
 
 const POSTS_SELECTOR: &str = "#pagelet_timeline_main_column > div:first-of-type > div:nth-child(2) > div:first-of-type > div";
 const IMAGE_CONTAINER_SELECTOR: &str = concat!(
-    "#pagelet_timeline_main_column > div:first-of-type > div:nth-child(2) > div:first-of-type > div",
-    " > div > div > div > div > div > div > div:not(:nth-child(1))"
+"#pagelet_timeline_main_column > div:first-of-type > div:nth-child(2) > div:first-of-type > div",
+" > div > div > div > div > div > div > div:not(:nth-child(1))"
 );
 const ID_SELECTOR: &str = r#"div[data-testid="story-subtitle"]"#;
 const TEXT_SELECTOR: &str = r#"div[data-testid="post_message"]"#;
 const IMAGE_SELECTOR: &str = "img";
 
-pub fn fetch_posts() -> Result<Vec<Post>, Box<dyn Error>> {
+pub async fn fetch_posts() -> Result<Vec<Post>, Box<dyn Error>> {
     let url = "https://www.facebook.com/pg/kantineKliversala/posts/";
-    let resp = Client::builder()
-        .build()?
+    let resp = Client::new()
         .get(url)
         .header("user-agent", "rusty")
-        .send()?;
+        .send()
+        .await?;
     assert!(resp.status().is_success());
-    let res_text = resp.text()?;
+    let res_text = resp.text().await?;
     let mut result: Vec<Post> = Vec::new();
 
     let document = Html::parse_document(&res_text);
