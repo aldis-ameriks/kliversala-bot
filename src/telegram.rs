@@ -92,8 +92,8 @@ mod tests {
         assert_eq!(telegram_client.domain, "https://api.telegram.org");
     }
 
-    #[test]
-    fn send_message_success() {
+    #[tokio::test]
+    async fn send_message_success() {
         let url = &server_url();
 
         let text = "message text";
@@ -115,12 +115,12 @@ mod tests {
             String::from(url),
         );
 
-        let result = client.send_message(text).unwrap();
+        let result = client.send_message(text).await.unwrap();
         assert_eq!(result, ());
     }
 
-    #[test]
-    fn send_message_error() {
+    #[tokio::test]
+    async fn send_message_error() {
         let error = r#"{"ok":false,"error_code":400,"description":"Bad Request: chat not found"}"#;
         let url = &server_url();
 
@@ -144,13 +144,13 @@ mod tests {
             String::from(url),
         );
 
-        let result = client.send_message(text).unwrap_err();
+        let result = client.send_message(text).await.unwrap_err();
         let result = format!("{}", result);
         assert_eq!(result, error);
     }
 
-    #[test]
-    fn send_image_success() {
+    #[tokio::test]
+    async fn send_image_success() {
         let url = &server_url();
 
         let image_url = "image url";
@@ -172,12 +172,12 @@ mod tests {
             String::from(url),
         );
 
-        let result = client.send_image(image_url).unwrap();
+        let result = client.send_image(image_url).await.unwrap();
         assert_eq!(result, ());
     }
 
-    #[test]
-    fn send_image_error() {
+    #[tokio::test]
+    async fn send_image_error() {
         let error = r#"{"ok":false,"error_code":400,"description":"Bad Request: chat not found"}"#;
         let url = &server_url();
 
@@ -201,7 +201,7 @@ mod tests {
             String::from(url),
         );
 
-        let result = client.send_image(image_url).unwrap_err();
+        let result = client.send_image(image_url).await.unwrap_err();
         let result = format!("{}", result);
         assert_eq!(result, error);
     }
