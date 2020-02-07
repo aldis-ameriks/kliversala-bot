@@ -49,7 +49,6 @@ impl TelegramClient {
         };
 
         let url = format!("{}/bot{}/sendMessage", self.domain, self.token);
-        // TODO: Refactor into async client
         let resp: Response = Client::new().post(&url).json(&message).send().await?;
 
         if resp.status().is_success() {
@@ -66,7 +65,6 @@ impl TelegramClient {
             disable_notification: true,
         };
         let url = format!("{}/bot{}/sendPhoto", self.domain, self.token);
-        // TODO: Refactor into async client
         let resp: Response = Client::new().post(&url).json(&image).send().await?;
 
         if resp.status().is_success() {
@@ -117,6 +115,7 @@ mod tests {
 
         let result = client.send_message(text).await.unwrap();
         assert_eq!(result, ());
+        _m.assert();
     }
 
     #[tokio::test]
@@ -147,6 +146,7 @@ mod tests {
         let result = client.send_message(text).await.unwrap_err();
         let result = format!("{}", result);
         assert_eq!(result, error);
+        _m.assert();
     }
 
     #[tokio::test]
@@ -174,6 +174,7 @@ mod tests {
 
         let result = client.send_image(image_url).await.unwrap();
         assert_eq!(result, ());
+        _m.assert();
     }
 
     #[tokio::test]
@@ -204,5 +205,6 @@ mod tests {
         let result = client.send_image(image_url).await.unwrap_err();
         let result = format!("{}", result);
         assert_eq!(result, error);
+        _m.assert();
     }
 }

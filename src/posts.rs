@@ -125,6 +125,7 @@ mod tests {
             "Nāc un piedalies arī Tu, jau no 01.02.2020! 🥘🍴☕\n\n"
         );
         assert_eq!(result[5].images, vec![String::from("https://scontent.frix3-1.fna.fbcdn.net/v/t1.0-0/p526x296/84437983_2465890103673159_2752238738611372032_o.jpg?_nc_cat=106&_nc_ohc=YlgO1JJVbLQAX8aROMV&_nc_ht=scontent.frix3-1.fna&_nc_tp=6&oh=a9a1e00cf9bf5ce65254d36f7ef27590&oe=5EC77203")]);
+        _m.assert();
     }
 
     #[tokio::test]
@@ -139,6 +140,7 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(result.len(), 0);
+        _m.assert();
     }
 
     #[tokio::test]
@@ -153,6 +155,7 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(result.len(), 0);
+        _m.assert();
     }
 
     #[tokio::test]
@@ -168,5 +171,6 @@ mod tests {
             .unwrap_err();
         let result = format!("{}", result);
         assert_eq!(result, "error");
+        _m.assert();
     }
 }
