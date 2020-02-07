@@ -1,8 +1,4 @@
 use std::error::Error;
-use std::{
-    fs::File,
-    io::{BufWriter, Write},
-};
 
 use html2md::parse_html;
 use log::{debug, info};
@@ -102,7 +98,7 @@ pub async fn fetch_posts(url: &str) -> Result<Vec<Post>, Box<dyn Error>> {
 
 #[cfg(test)]
 mod tests {
-    use mockito::{mock, server_url, Matcher};
+    use mockito::{mock, server_url};
 
     use super::*;
 
@@ -111,7 +107,7 @@ mod tests {
         let url = &server_url();
         let _m = mock("GET", "/pg/kantineKliversala/posts/")
             .with_status(200)
-            .with_body_from_file("mock_response.html")
+            .with_body_from_file("_mock_response")
             .create();
 
         let result = fetch_posts(format!("{}/pg/kantineKliversala/posts/", url).as_str())
