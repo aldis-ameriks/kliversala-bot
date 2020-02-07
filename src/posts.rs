@@ -1,4 +1,8 @@
 use std::error::Error;
+use std::{
+    fs::File,
+    io::{BufWriter, Write},
+};
 
 use html2md::parse_html;
 use log::{debug, info};
@@ -21,14 +25,17 @@ const ID_SELECTOR: &str = r#"div[data-testid="story-subtitle"]"#;
 const TEXT_SELECTOR: &str = r#"div[data-testid="post_message"]"#;
 const IMAGE_SELECTOR: &str = "img";
 
-pub async fn fetch_posts() -> Result<Vec<Post>, Box<dyn Error>> {
-    let url = "https://www.facebook.com/pg/kantineKliversala/posts/";
+pub async fn fetch_posts(url: &str) -> Result<Vec<Post>, Box<dyn Error>> {
     let resp = Client::new()
         .get(url)
         .header("user-agent", "rusty")
         .send()
         .await?;
-    assert!(resp.status().is_success());
+
+    if !resp.status().is_success() {
+        return Err(resp.text().await?.into());
+    }
+
     let res_text = resp.text().await?;
     let mut result: Vec<Post> = Vec::new();
 
@@ -73,7 +80,17 @@ pub async fn fetch_posts() -> Result<Vec<Post>, Box<dyn Error>> {
 
         let post = Post {
             id: format!("{}", post_id).replace("\"", ""),
-            text: parsed_text.replace("\\-", "-"),
+            text: parsed_text
+                .replace("\\-", "-")
+                .replace("...", "")
+                .replace(
+                    format!("[See more](/kantineKliversala/posts/{})", post_id).as_str(),
+                    "",
+                )
+                .replace(
+                    format!("[See More](/kantineKliversala/posts/{})", post_id).as_str(),
+                    "",
+                ),
             images,
         };
 
@@ -81,4 +98,79 @@ pub async fn fetch_posts() -> Result<Vec<Post>, Box<dyn Error>> {
     }
 
     Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use mockito::{mock, server_url, Matcher};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn fetch_posts_success() {
+        let url = &server_url();
+        let _m = mock("GET", "/pg/kantineKliversala/posts/")
+            .with_status(200)
+            .with_body_from_file("mock_response.html")
+            .create();
+
+        let result = fetch_posts(format!("{}/pg/kantineKliversala/posts/", url).as_str())
+            .await
+            .unwrap();
+        assert_eq!(result.len(), 19);
+        assert_eq!(result[0].id, "2471140943148075");
+        assert_eq!(result[0].text, "Pusdienu piedāvājums 7. februārī.  \n Dienas piedāvājums pieejams 11:00-16:00\n\n Mazais pusdienu piedāvājums:  \n🍗v/g saldakābā mērcē vai 🥘makaroni \"Jūrnieku gaumē\", vai 🌽kuskuss ar dārzeņiem  \n🥒 dienas salāti  \n🍷 dzērveņu dzēriens   \n💸 3,90€\n\n Lielais pusdienu piedāvājums:  \n🍲frikadeļu zupa vai dārzeņu krēmzupa, vai 🍰 dienas deserts  \n🍗v/g saldskābā mērcē vai 🥘makaroni \"Jūrnieku gaumē\", vai 🌽kuskuss ar dārzeņiem  \n🥒 dienas salāti  \n🍷 dzērveņu dzēriens   \n💸 4,60€\n\n Labu apetīti!\n\n[Skatīt vairāk]()\n\n");
+        let images: Vec<String> = Vec::new();
+        assert_eq!(result[0].images, images);
+
+        assert_eq!(result[5].id, "2465890140339822");
+        assert_eq!(
+            result[5].text,
+            "Nāc un piedalies arī Tu, jau no 01.02.2020! 🥘🍴☕\n\n"
+        );
+        assert_eq!(result[5].images, vec![String::from("https://scontent.frix3-1.fna.fbcdn.net/v/t1.0-0/p526x296/84437983_2465890103673159_2752238738611372032_o.jpg?_nc_cat=106&_nc_ohc=YlgO1JJVbLQAX8aROMV&_nc_ht=scontent.frix3-1.fna&_nc_tp=6&oh=a9a1e00cf9bf5ce65254d36f7ef27590&oe=5EC77203")]);
+    }
+
+    #[tokio::test]
+    async fn fetch_posts_empty_html() {
+        let url = &server_url();
+        let _m = mock("GET", "/pg/kantineKliversala/posts/")
+            .with_status(200)
+            .with_body("<html><body><div>empty</div></body></html>")
+            .create();
+
+        let result = fetch_posts(format!("{}/pg/kantineKliversala/posts/", url).as_str())
+            .await
+            .unwrap();
+        assert_eq!(result.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn fetch_posts_corrupt_html() {
+        let url = &server_url();
+        let _m = mock("GET", "/pg/kantineKliversala/posts/")
+            .with_status(200)
+            .with_body("something")
+            .create();
+
+        let result = fetch_posts(format!("{}/pg/kantineKliversala/posts/", url).as_str())
+            .await
+            .unwrap();
+        assert_eq!(result.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn fetch_posts_error() {
+        let url = &server_url();
+        let _m = mock("GET", "/pg/kantineKliversala/posts/")
+            .with_status(400)
+            .with_body("error")
+            .create();
+
+        let result = fetch_posts(format!("{}/pg/kantineKliversala/posts/", url).as_str())
+            .await
+            .unwrap_err();
+        let result = format!("{}", result);
+        assert_eq!(result, "error");
+    }
 }

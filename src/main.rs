@@ -39,7 +39,7 @@ async fn process_posts() -> Result<(), Box<dyn Error>> {
     let dynamo_client = DynamoClient::new(table_name);
     let telegram_client = TelegramClient::new(token, chat_id);
 
-    let posts = fetch_posts().await?;
+    let posts = fetch_posts("https://www.facebook.com/pg/kantineKliversala/posts/").await?;
     info!("found {} posts", posts.len());
 
     for post in posts {
