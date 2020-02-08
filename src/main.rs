@@ -1,19 +1,10 @@
-use std::env;
-use std::error::Error;
-
 use lambda_runtime::{error::HandlerError, lambda, Context};
 use log::Level;
 use log::{error, info};
 use serde_json::Value;
 use tokio::runtime::Runtime;
 
-use dynamo_db::DynamoClient;
-use posts::fetch_posts;
-use telegram::TelegramClient;
-
-mod dynamo_db;
-mod posts;
-mod telegram;
+use kliversala_bot::process_posts;
 
 fn main() {
     simple_logger::init_with_level(Level::Info).expect("Failed to init logger");
@@ -29,31 +20,4 @@ fn handler(event: Value, _: Context) -> Result<Value, HandlerError> {
         }
     });
     Ok(event)
-}
-
-async fn process_posts() -> Result<(), Box<dyn Error>> {
-    let token = env::var("TG_TOKEN").expect("Missing TG_TOKEN env var");
-    let chat_id = env::var("TG_CHAT_ID").expect("Missing TG_CHAT_ID env var");
-    let table_name = env::var("TABLE_NAME").expect("Missing TABLE_NAME env var");
-
-    let dynamo_client = DynamoClient::new(table_name);
-    let telegram_client = TelegramClient::new(token, chat_id);
-
-    let posts = fetch_posts("https://www.facebook.com/pg/kantineKliversala/posts/").await?;
-    info!("found {} posts", posts.len());
-
-    for post in posts {
-        if let None = dynamo_client.get_post(&post.id).await? {
-            info!("sending notification for post: {:?}", post);
-            telegram_client.send_message(&post.text).await?;
-            dynamo_client.put_post(&post).await?;
-            for image in post.images {
-                telegram_client.send_image(&image).await?;
-            }
-        } else {
-            info!("post is already sent: {}", &post.id);
-        }
-    }
-
-    Ok(())
 }
