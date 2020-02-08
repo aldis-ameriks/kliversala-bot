@@ -15,8 +15,8 @@ log = "0.4.8"
 simple_logger = "1.5.0"
 html2md = "0.2.9"
 lambda_runtime = "0.2.1"
-rusoto_core = "0.42.0"
-rusoto_dynamodb = "0.42.0"
+rusoto_core = "0.43.0-beta.1"
+rusoto_dynamodb = "0.43.0-beta.1"
 tokio = { version = "0.2" }
 
 [dev-dependencies]

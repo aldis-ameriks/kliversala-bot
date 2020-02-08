@@ -20,7 +20,10 @@ impl DynamoClient {
         DynamoClient { client, table_name }
     }
 
-    pub fn get_post<'a>(&self, id: &'a str) -> Result<Option<&'a str>, RusotoError<GetItemError>> {
+    pub async fn get_post<'a>(
+        &self,
+        id: &'a str,
+    ) -> Result<Option<&'a str>, RusotoError<GetItemError>> {
         let mut query_key: HashMap<String, AttributeValue> = HashMap::new();
         query_key.insert(
             String::from("id"),
@@ -34,7 +37,7 @@ impl DynamoClient {
             key: query_key,
             ..GetItemInput::default()
         };
-        match self.client.get_item(get_item_input).sync() {
+        match self.client.get_item(get_item_input).await {
             Ok(output) => match output.item {
                 Some(_) => {
                     info!("get_item: OK(id: {})", id);
@@ -52,7 +55,7 @@ impl DynamoClient {
         }
     }
 
-    pub fn put_post(&self, post: &Post) -> Result<(), RusotoError<PutItemError>> {
+    pub async fn put_post(&self, post: &Post) -> Result<(), RusotoError<PutItemError>> {
         let mut query_key: HashMap<String, AttributeValue> = HashMap::new();
         query_key.insert(
             String::from("id"),
@@ -74,7 +77,7 @@ impl DynamoClient {
             ..PutItemInput::default()
         };
 
-        match self.client.put_item(put_item_input).sync() {
+        match self.client.put_item(put_item_input).await {
             Ok(_) => {
                 info!("put_item: OK(id: {})", post.id);
                 Ok(())

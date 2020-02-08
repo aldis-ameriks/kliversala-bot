@@ -43,10 +43,10 @@ async fn process_posts() -> Result<(), Box<dyn Error>> {
     info!("found {} posts", posts.len());
 
     for post in posts {
-        if let None = dynamo_client.get_post(&post.id)? {
+        if let None = dynamo_client.get_post(&post.id).await? {
             info!("sending notification for post: {:?}", post);
             telegram_client.send_message(&post.text).await?;
-            dynamo_client.put_post(&post)?;
+            dynamo_client.put_post(&post).await?;
             for image in post.images {
                 telegram_client.send_image(&image).await?;
             }
