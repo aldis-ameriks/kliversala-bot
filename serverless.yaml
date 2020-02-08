@@ -12,11 +12,11 @@ provider:
   memorySize: 128
   timeout: 20
   region: eu-west-1
-  stage: dev
+  stage: ${opt:stage, 'dev'}
   versionFunctions: false
   environment:
     TG_TOKEN: ${ssm:TG_TOKEN~true}
-    TG_CHAT_ID: ${ssm:TG_CHAT_ID}
+    TG_CHAT_ID: ${ssm:TG_CHAT_ID-${self:provider.stage}}
     TABLE_NAME: ${self:custom.tableName}
   iamRoleStatements:
     - Effect: Allow
