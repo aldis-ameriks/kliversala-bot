@@ -62,7 +62,7 @@ impl TelegramClient {
         }
     }
 
-    pub async fn send_image(&self, url: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn send_image(&self, url: &str) -> Result<String, Box<dyn Error>> {
         let image = Image {
             chat_id: &self.chat_id,
             photo: url,
@@ -72,7 +72,10 @@ impl TelegramClient {
         let resp: Response = Client::new().post(&url).json(&image).send().await?;
 
         if resp.status().is_success() {
-            Ok(())
+            let resp: Value = from_str(&resp.text().await?)?;
+            let resp = &resp["result"];
+            let resp = &resp["message_id"];
+            Ok(format!("{}", resp))
         } else {
             Err(resp.text().await?.into())
         }
@@ -115,7 +118,7 @@ mod tests {
     #[tokio::test]
     async fn send_message_success() {
         let url = &server_url();
-        let resp = r#"{"ok":true,"result":{"message_id":691,"from":{"id":1083596312,"is_bot":true,"first_name":"KliversalaBot","username":"KliversalaBot"},"chat":{"id":900963193,"first_name":"Aldis","username":"aldis_a","type":"private"},"date":1581200384,"text":"This is a test from curl"}}"#;
+        let resp = r#"{"ok":true,"result":{"message_id":691,"from":{"id":414141,"is_bot":true,"first_name":"KliversalaBot","username":"KliversalaBot"},"chat":{"id":123,"first_name":"Name","username":"username","type":"private"},"date":1581200384,"text":"This is a test message"}}"#;
 
         let text = "message text";
         let expected_message = Message {
@@ -176,6 +179,7 @@ mod tests {
     #[tokio::test]
     async fn send_image_success() {
         let url = &server_url();
+        let resp = r#"{"ok":true,"result":{"message_id":691,"from":{"id":414141,"is_bot":true,"first_name":"KliversalaBot","username":"KliversalaBot"},"chat":{"id":123,"first_name":"Name","username":"username","type":"private"},"date":1581200384,"text":"This is a test message"}}"#;
 
         let image_url = "image url";
         let expected_image = Image {
@@ -187,6 +191,7 @@ mod tests {
         let _m = mock("POST", format!("/bot{}/sendPhoto", TOKEN).as_str())
             .match_body(Matcher::Json(json!(expected_image)))
             .with_status(200)
+            .with_body(resp)
             .with_header("content-type", "application/json")
             .create();
 
@@ -197,7 +202,8 @@ mod tests {
         );
 
         let result = client.send_image(image_url).await.unwrap();
-        assert_eq!(result, ());
+        let result = format!("{}", result);
+        assert_eq!(result, "691");
         _m.assert();
     }
 

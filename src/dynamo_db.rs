@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use log::{error, info};
+use log::{debug, error, info};
 use rusoto_core::{Region, RusotoError};
 use rusoto_dynamodb::{
     AttributeValue, DeleteItemError, DeleteItemInput, DynamoDb, DynamoDbClient, GetItemError,
@@ -40,22 +40,24 @@ impl DynamoClient {
         match self.client.get_item(get_item_input).await {
             Ok(output) => match output.item {
                 Some(_) => {
-                    info!("get_item: Ok(id: {})", id);
+                    info!("get_post: Ok(id: {})", id);
                     Ok(Some(id))
                 }
                 None => {
-                    info!("get_item: item {} not found", id);
+                    info!("get_post: post {} not found", id);
                     Ok(None)
                 }
             },
             Err(error) => {
-                error!("get_item: Error: {:?}", error);
+                error!("get_post: Error: {:?}", error);
                 Err(error)
             }
         }
     }
 
     pub async fn put_post(&self, post: &Post) -> Result<(), RusotoError<PutItemError>> {
+        debug!("put_post: {:?}", post);
+
         let mut query_key: HashMap<String, AttributeValue> = HashMap::new();
         query_key.insert(
             String::from("id"),
@@ -87,6 +89,15 @@ impl DynamoClient {
                 },
             );
         }
+        if post.image_ids.len() > 0 {
+            query_key.insert(
+                String::from("image_ids"),
+                AttributeValue {
+                    ss: Some(post.image_ids.clone()),
+                    ..Default::default()
+                },
+            );
+        }
         let put_item_input = PutItemInput {
             table_name: self.table_name.clone(),
             item: query_key,
@@ -95,11 +106,11 @@ impl DynamoClient {
 
         match self.client.put_item(put_item_input).await {
             Ok(_) => {
-                info!("put_item: Ok(id: {})", post.id);
+                info!("put_post: Ok(id: {})", post.id);
                 Ok(())
             }
             Err(error) => {
-                error!("put_item: Error: {:?}", error);
+                error!("put_post: Error: {:?}", error);
                 Err(error)
             }
         }
@@ -118,9 +129,15 @@ impl DynamoClient {
                     Some(result) => {
                         let mut posts = vec![];
                         for entry in result {
-                            println!("{:#?}", entry);
+                            debug!("{:?}", entry);
 
                             let images = if let Some(val) = entry.get("images") {
+                                val.ss.as_ref().unwrap().clone()
+                            } else {
+                                vec![]
+                            };
+
+                            let image_ids = if let Some(val) = entry.get("image_ids") {
                                 val.ss.as_ref().unwrap().clone()
                             } else {
                                 vec![]
@@ -130,6 +147,7 @@ impl DynamoClient {
                                 id: String::from(entry.get("id").unwrap().s.as_ref().unwrap()),
                                 text: String::from(entry.get("text").unwrap().s.as_ref().unwrap()),
                                 images,
+                                image_ids,
                                 message_id: Some(String::from(
                                     entry.get("message_id").unwrap().s.as_ref().unwrap(),
                                 )),
@@ -165,11 +183,11 @@ impl DynamoClient {
 
         match self.client.delete_item(delete_item_input).await {
             Ok(_) => {
-                info!("delete_item: Ok(id: {})", id);
+                info!("delete_post: Ok(id: {})", id);
                 Ok(())
             }
             Err(error) => {
-                error!("delete_item: Error: {:?}", error);
+                error!("delete_post: Error: {:?}", error);
                 Err(error)
             }
         }

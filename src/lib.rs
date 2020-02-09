@@ -27,10 +27,11 @@ pub async fn process_posts() -> Result<(), Box<dyn Error>> {
             info!("sending notification for post: {:?}", post);
             let message_id = telegram_client.send_message(&post.text).await?;
             post.message_id = Some(message_id);
-            dynamo_client.put_post(&post).await?;
-            for image in post.images {
-                telegram_client.send_image(&image).await?;
+            for image in &post.images {
+                let image_id = telegram_client.send_image(&image).await?;
+                post.image_ids.push(image_id);
             }
+            dynamo_client.put_post(&post).await?;
         } else {
             info!("post is already sent: {}", &post.id);
         }
