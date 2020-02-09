@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use log::{error, info};
 use rusoto_core::{Region, RusotoError};
 use rusoto_dynamodb::{
-    AttributeValue, DynamoDb, DynamoDbClient, GetItemError, GetItemInput, PutItemError,
-    PutItemInput,
+    AttributeValue, DeleteItemError, DeleteItemInput, DynamoDb, DynamoDbClient, GetItemError,
+    GetItemInput, PutItemError, PutItemInput, ScanError, ScanInput,
 };
 
 use crate::posts::Post;
@@ -95,11 +95,81 @@ impl DynamoClient {
 
         match self.client.put_item(put_item_input).await {
             Ok(_) => {
-                info!("put_item: OK(id: {})", post.id);
+                info!("put_item: Ok(id: {})", post.id);
                 Ok(())
             }
             Err(error) => {
                 error!("put_item: Error: {:?}", error);
+                Err(error)
+            }
+        }
+    }
+
+    pub async fn scan_posts(&self) -> Result<Vec<Post>, RusotoError<ScanError>> {
+        let scan_input = ScanInput {
+            table_name: self.table_name.clone(),
+            ..ScanInput::default()
+        };
+
+        match self.client.scan(scan_input).await {
+            Ok(res) => {
+                info!("scan: Ok(count: {:?})", res.count);
+                match res.items {
+                    Some(result) => {
+                        let mut posts = vec![];
+                        for entry in result {
+                            println!("{:#?}", entry);
+
+                            let images = if let Some(val) = entry.get("images") {
+                                val.ss.as_ref().unwrap().clone()
+                            } else {
+                                vec![]
+                            };
+
+                            let post = Post {
+                                id: String::from(entry.get("id").unwrap().s.as_ref().unwrap()),
+                                text: String::from(entry.get("text").unwrap().s.as_ref().unwrap()),
+                                images,
+                                message_id: Some(String::from(
+                                    entry.get("message_id").unwrap().s.as_ref().unwrap(),
+                                )),
+                            };
+                            posts.push(post);
+                        }
+                        Ok(posts)
+                    }
+                    None => Ok(vec![]),
+                }
+            }
+            Err(error) => {
+                error!("scan: Error: {:?}", error);
+                Err(error)
+            }
+        }
+    }
+
+    pub async fn delete_post(&self, id: &str) -> Result<(), RusotoError<DeleteItemError>> {
+        let mut query_key: HashMap<String, AttributeValue> = HashMap::new();
+        query_key.insert(
+            String::from("id"),
+            AttributeValue {
+                s: Some(id.to_string()),
+                ..Default::default()
+            },
+        );
+        let delete_item_input = DeleteItemInput {
+            table_name: self.table_name.clone(),
+            key: query_key,
+            ..DeleteItemInput::default()
+        };
+
+        match self.client.delete_item(delete_item_input).await {
+            Ok(_) => {
+                info!("delete_item: Ok(id: {})", id);
+                Ok(())
+            }
+            Err(error) => {
+                error!("delete_item: Error: {:?}", error);
                 Err(error)
             }
         }
