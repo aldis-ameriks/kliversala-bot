@@ -3,9 +3,11 @@ use std::env;
 
 #[tokio::test]
 async fn process_posts_success() {
-    env::set_var("TG_CHAT_ID", "900963193");
-    env::set_var("TABLE_NAME", "posts-dev");
-    let dynamo_client = dynamo_db::DynamoClient::new(String::from("posts-dev"));
+    let token = env::var("TG_TOKEN").expect("Missing TG_TOKEN env var");
+    let chat_id = env::var("TG_CHAT_ID").expect("Missing TG_CHAT_ID env var");
+    let table_name = env::var("TABLE_NAME").expect("Missing TABLE_NAME env var");
+
+    let dynamo_client = dynamo_db::DynamoClient::new(table_name);
     delete_all_posts(&dynamo_client).await;
 
     process_posts().await.unwrap();
@@ -14,10 +16,7 @@ async fn process_posts_success() {
     assert_eq!(19, existing_posts.len());
     delete_all_posts(&dynamo_client).await;
 
-    let telegram_client = telegram::TelegramClient::new(
-        env::var("TG_TOKEN").unwrap(),
-        String::from("900963193"),
-    );
+    let telegram_client = telegram::TelegramClient::new(token, chat_id);
     for post in existing_posts {
         telegram_client
             .delete_message(&post.message_id.unwrap())

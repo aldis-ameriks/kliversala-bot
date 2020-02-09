@@ -80,9 +80,14 @@ impl TelegramClient {
 
     pub async fn delete_message(&self, message_id: &str) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/bot{}/deleteMessage", self.domain, self.token);
-        let resp: Response = Client::new().post(&url)
-            .form(&[("chat_id", &self.chat_id), ("message_id", &String::from(message_id))])
-            .send().await?;
+        let resp: Response = Client::new()
+            .post(&url)
+            .form(&[
+                ("chat_id", &self.chat_id),
+                ("message_id", &String::from(message_id)),
+            ])
+            .send()
+            .await?;
 
         if resp.status().is_success() {
             Ok(())
