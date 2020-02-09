@@ -19,9 +19,15 @@ async fn process_posts_success() {
     let telegram_client = telegram::TelegramClient::new(token, chat_id);
     for post in existing_posts {
         telegram_client
-            .delete_message(&post.message_id.unwrap())
+            .delete_message(&post.message_id.as_ref().unwrap())
             .await
             .expect("Failed to delete message");
+        for image_id in &post.image_ids {
+            telegram_client
+                .delete_message(&image_id)
+                .await
+                .expect("Failed to delete image");
+        }
     }
 }
 
