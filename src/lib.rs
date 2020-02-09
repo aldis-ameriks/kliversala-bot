@@ -33,6 +33,7 @@ pub async fn process_posts() -> Result<(), Box<dyn Error>> {
         } else {
             info!("post is already sent: {}", &post.id);
         }
+        std::thread::sleep(std::time::Duration::from_millis(500));
     }
 
     Ok(())
