@@ -40,7 +40,7 @@ impl DynamoClient {
         match self.client.get_item(get_item_input).await {
             Ok(output) => match output.item {
                 Some(_) => {
-                    info!("get_item: OK(id: {})", id);
+                    info!("get_item: Ok(id: {})", id);
                     Ok(Some(id))
                 }
                 None => {
@@ -71,6 +71,22 @@ impl DynamoClient {
                 ..Default::default()
             },
         );
+        query_key.insert(
+            String::from("message_id"),
+            AttributeValue {
+                s: Some(post.message_id.clone().unwrap()),
+                ..Default::default()
+            },
+        );
+        if post.images.len() > 0 {
+            query_key.insert(
+                String::from("images"),
+                AttributeValue {
+                    ss: Some(post.images.clone()),
+                    ..Default::default()
+                },
+            );
+        }
         let put_item_input = PutItemInput {
             table_name: self.table_name.clone(),
             item: query_key,

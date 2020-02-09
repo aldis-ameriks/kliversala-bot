@@ -10,6 +10,7 @@ pub struct Post {
     pub id: String,
     pub text: String,
     pub images: Vec<String>,
+    pub message_id: Option<String>,
 }
 
 const POSTS_SELECTOR: &str = "#pagelet_timeline_main_column > div:first-of-type > div:nth-child(2) > div:first-of-type > div";
@@ -88,6 +89,7 @@ pub async fn fetch_posts(url: &str) -> Result<Vec<Post>, Box<dyn Error>> {
                     "",
                 ),
             images,
+            message_id: None,
         };
 
         result.push(post);

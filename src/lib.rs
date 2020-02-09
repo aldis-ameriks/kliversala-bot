@@ -22,10 +22,11 @@ pub async fn process_posts() -> Result<(), Box<dyn Error>> {
     let posts = fetch_posts("https://www.facebook.com/pg/kantineKliversala/posts/").await?;
     info!("found {} posts", posts.len());
 
-    for post in posts {
+    for mut post in posts {
         if let None = dynamo_client.get_post(&post.id).await? {
             info!("sending notification for post: {:?}", post);
-            telegram_client.send_message(&post.text).await?;
+            let message_id = telegram_client.send_message(&post.text).await?;
+            post.message_id = Some(message_id);
             dynamo_client.put_post(&post).await?;
             for image in post.images {
                 telegram_client.send_image(&image).await?;

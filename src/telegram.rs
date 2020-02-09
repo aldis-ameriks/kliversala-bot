@@ -2,6 +2,7 @@ use std::error::Error;
 
 use reqwest::{Client, Response};
 use serde::Serialize;
+use serde_json::{from_str, Value};
 
 pub struct TelegramClient {
     token: String,
@@ -41,7 +42,7 @@ impl TelegramClient {
         }
     }
 
-    pub async fn send_message(&self, text: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn send_message(&self, text: &str) -> Result<String, Box<dyn Error>> {
         let message = Message {
             chat_id: &self.chat_id,
             text,
@@ -52,7 +53,10 @@ impl TelegramClient {
         let resp: Response = Client::new().post(&url).json(&message).send().await?;
 
         if resp.status().is_success() {
-            Ok(())
+            let resp: Value = from_str(&resp.text().await?)?;
+            let resp = &resp["result"];
+            let resp = &resp["message_id"];
+            Ok(format!("{}", resp))
         } else {
             Err(resp.text().await?.into())
         }
@@ -93,6 +97,7 @@ mod tests {
     #[tokio::test]
     async fn send_message_success() {
         let url = &server_url();
+        let resp = r#"{"ok":true,"result":{"message_id":691,"from":{"id":1083596312,"is_bot":true,"first_name":"KliversalaBot","username":"KliversalaBot"},"chat":{"id":900963193,"first_name":"Aldis","username":"aldis_a","type":"private"},"date":1581200384,"text":"This is a test from curl"}}"#;
 
         let text = "message text";
         let expected_message = Message {
@@ -104,6 +109,7 @@ mod tests {
         let _m = mock("POST", format!("/bot{}/sendMessage", TOKEN).as_str())
             .match_body(Matcher::Json(json!(expected_message)))
             .with_status(200)
+            .with_body(resp)
             .with_header("content-type", "application/json")
             .create();
 
@@ -114,7 +120,7 @@ mod tests {
         );
 
         let result = client.send_message(text).await.unwrap();
-        assert_eq!(result, ());
+        assert_eq!(result, "691");
         _m.assert();
     }
 
