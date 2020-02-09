@@ -77,6 +77,19 @@ impl TelegramClient {
             Err(resp.text().await?.into())
         }
     }
+
+    pub async fn delete_message(&self, message_id: &str) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/bot{}/deleteMessage", self.domain, self.token);
+        let resp: Response = Client::new().post(&url)
+            .form(&[("chat_id", &self.chat_id), ("message_id", &String::from(message_id))])
+            .send().await?;
+
+        if resp.status().is_success() {
+            Ok(())
+        } else {
+            Err(resp.text().await?.into())
+        }
+    }
 }
 
 #[cfg(test)]
@@ -209,6 +222,48 @@ mod tests {
         );
 
         let result = client.send_image(image_url).await.unwrap_err();
+        let result = format!("{}", result);
+        assert_eq!(result, error);
+        _m.assert();
+    }
+
+    #[tokio::test]
+    async fn delete_message_success() {
+        let url = &server_url();
+        let _m = mock("POST", format!("/bot{}/deleteMessage", TOKEN).as_str())
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .create();
+
+        let client = TelegramClient::new_with(
+            String::from(TOKEN),
+            String::from(CHAT_ID),
+            String::from(url),
+        );
+
+        let result = client.delete_message("id").await.unwrap();
+        assert_eq!(result, ());
+        _m.assert();
+    }
+
+    #[tokio::test]
+    async fn delete_message_error() {
+        let error = r#"{"ok":false,"error_code":400,"description":"Bad Request: chat not found"}"#;
+
+        let url = &server_url();
+        let _m = mock("POST", format!("/bot{}/deleteMessage", TOKEN).as_str())
+            .with_status(400)
+            .with_body(error)
+            .with_header("content-type", "application/json")
+            .create();
+
+        let client = TelegramClient::new_with(
+            String::from(TOKEN),
+            String::from(CHAT_ID),
+            String::from(url),
+        );
+
+        let result = client.delete_message("id").await.unwrap_err();
         let result = format!("{}", result);
         assert_eq!(result, error);
         _m.assert();
