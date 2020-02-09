@@ -20,10 +20,7 @@ impl DynamoClient {
         DynamoClient { client, table_name }
     }
 
-    pub async fn get_post<'a>(
-        &self,
-        id: &'a str,
-    ) -> Result<Option<&'a str>, RusotoError<GetItemError>> {
+    pub async fn get_post<'a>(&self, id: &str) -> Result<Option<Post>, RusotoError<GetItemError>> {
         let mut query_key: HashMap<String, AttributeValue> = HashMap::new();
         query_key.insert(
             String::from("id"),
@@ -39,9 +36,10 @@ impl DynamoClient {
         };
         match self.client.get_item(get_item_input).await {
             Ok(output) => match output.item {
-                Some(_) => {
+                Some(entry) => {
                     info!("get_post: Ok(id: {})", id);
-                    Ok(Some(id))
+                    let post = build_post(entry);
+                    Ok(Some(post))
                 }
                 None => {
                     info!("get_post: post {} not found", id);
@@ -130,28 +128,7 @@ impl DynamoClient {
                         let mut posts = vec![];
                         for entry in result {
                             debug!("{:?}", entry);
-
-                            let images = if let Some(val) = entry.get("images") {
-                                val.ss.as_ref().unwrap().clone()
-                            } else {
-                                vec![]
-                            };
-
-                            let image_ids = if let Some(val) = entry.get("image_ids") {
-                                val.ss.as_ref().unwrap().clone()
-                            } else {
-                                vec![]
-                            };
-
-                            let post = Post {
-                                id: String::from(entry.get("id").unwrap().s.as_ref().unwrap()),
-                                text: String::from(entry.get("text").unwrap().s.as_ref().unwrap()),
-                                images,
-                                image_ids,
-                                message_id: Some(String::from(
-                                    entry.get("message_id").unwrap().s.as_ref().unwrap(),
-                                )),
-                            };
+                            let post = build_post(entry);
                             posts.push(post);
                         }
                         Ok(posts)
@@ -191,5 +168,29 @@ impl DynamoClient {
                 Err(error)
             }
         }
+    }
+}
+
+fn build_post(entry: std::collections::HashMap<String, AttributeValue>) -> Post {
+    let images = if let Some(val) = entry.get("images") {
+        val.ss.as_ref().unwrap().clone()
+    } else {
+        vec![]
+    };
+
+    let image_ids = if let Some(val) = entry.get("image_ids") {
+        val.ss.as_ref().unwrap().clone()
+    } else {
+        vec![]
+    };
+
+    Post {
+        id: String::from(entry.get("id").unwrap().s.as_ref().unwrap()),
+        text: String::from(entry.get("text").unwrap().s.as_ref().unwrap()),
+        images,
+        image_ids,
+        message_id: Some(String::from(
+            entry.get("message_id").unwrap().s.as_ref().unwrap(),
+        )),
     }
 }
