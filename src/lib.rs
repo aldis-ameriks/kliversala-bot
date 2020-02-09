@@ -33,6 +33,7 @@ pub async fn process_posts() -> Result<(), Box<dyn Error>> {
             }
             dynamo_client.put_post(&post).await?;
         } else {
+            // TODO: Update sent posts if text/image has been updated.
             info!("post is already sent: {}", &post.id);
         }
         std::thread::sleep(std::time::Duration::from_millis(500));
