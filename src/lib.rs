@@ -8,7 +8,7 @@ use posts::fetch_posts;
 use telegram::TelegramClient;
 
 pub mod dynamo_db;
-mod posts;
+pub mod posts;
 pub mod telegram;
 
 pub async fn process_posts() -> Result<(), Box<dyn Error>> {

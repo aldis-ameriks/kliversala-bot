@@ -20,7 +20,7 @@ const IMAGE_CONTAINER_SELECTOR: &str = concat!(
 " > div > div > div > div > div > div > div:not(:nth-child(1))"
 );
 const ID_SELECTOR: &str = r#"div[data-testid="story-subtitle"]"#;
-const TEXT_SELECTOR: &str = r#"div[data-testid="post_message"]"#;
+const TEXT_SELECTOR: &str = r#"div[data-testid="post_message"] > *:first-child"#;
 const IMAGE_SELECTOR: &str = "img";
 
 pub async fn fetch_posts(url: &str) -> Result<Vec<Post>, Box<dyn Error>> {
@@ -119,14 +119,14 @@ mod tests {
             .unwrap();
         assert_eq!(result.len(), 19);
         assert_eq!(result[0].id, "2471140943148075");
-        assert_eq!(result[0].text, "Pusdienu piedāvājums 7. februārī.  \n Dienas piedāvājums pieejams 11:00-16:00\n\n Mazais pusdienu piedāvājums:  \n🍗v/g saldakābā mērcē vai 🥘makaroni \"Jūrnieku gaumē\", vai 🌽kuskuss ar dārzeņiem  \n🥒 dienas salāti  \n🍷 dzērveņu dzēriens   \n💸 3,90€\n\n Lielais pusdienu piedāvājums:  \n🍲frikadeļu zupa vai dārzeņu krēmzupa, vai 🍰 dienas deserts  \n🍗v/g saldskābā mērcē vai 🥘makaroni \"Jūrnieku gaumē\", vai 🌽kuskuss ar dārzeņiem  \n🥒 dienas salāti  \n🍷 dzērveņu dzēriens   \n💸 4,60€\n\n Labu apetīti!\n\n[Skatīt vairāk]()\n\n");
+        assert_eq!(result[0].text, "Pusdienu piedāvājums 7. februārī.  \n Dienas piedāvājums pieejams 11:00-16:00\n\n Mazais pusdienu piedāvājums:  \n🍗v/g saldakābā mērcē vai 🥘makaroni \"Jūrnieku gaumē\", vai 🌽kuskuss ar dārzeņiem  \n🥒 dienas salāti  \n🍷 dzērveņu dzēriens   \n💸 3,90€\n\n Lielais pusdienu piedāvājums:  \n🍲frikadeļu zupa vai dārzeņu krēmzupa, vai 🍰 dienas deserts  \n🍗v/g saldskābā mērcē vai 🥘makaroni \"Jūrnieku gaumē\", vai 🌽kuskuss ar dārzeņiem  \n🥒 dienas salāti  \n🍷 dzērveņu dzēriens   \n💸 4,60€\n\n Labu apetīti!\n\n[Skatīt vairāk]()");
         let images: Vec<String> = Vec::new();
         assert_eq!(result[0].images, images);
 
         assert_eq!(result[5].id, "2465890140339822");
         assert_eq!(
             result[5].text,
-            "Nāc un piedalies arī Tu, jau no 01.02.2020! 🥘🍴☕\n\n"
+            "Nāc un piedalies arī Tu, jau no 01.02.2020! 🥘🍴☕"
         );
         assert_eq!(result[5].images, vec![String::from("https://scontent.frix3-1.fna.fbcdn.net/v/t1.0-0/p526x296/84437983_2465890103673159_2752238738611372032_o.jpg?_nc_cat=106&_nc_ohc=YlgO1JJVbLQAX8aROMV&_nc_ht=scontent.frix3-1.fna&_nc_tp=6&oh=a9a1e00cf9bf5ce65254d36f7ef27590&oe=5EC77203")]);
         _m.assert();
