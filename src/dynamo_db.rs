@@ -7,7 +7,7 @@ use rusoto_dynamodb::{
     GetItemInput, PutItemError, PutItemInput, ScanError, ScanInput,
 };
 
-use crate::posts::Post;
+use crate::posts::{Image, Post};
 
 pub struct DynamoClient {
     client: DynamoDbClient,
@@ -64,34 +64,48 @@ impl DynamoClient {
                 ..Default::default()
             },
         );
-        query_key.insert(
-            String::from("text"),
-            AttributeValue {
-                s: Some(post.text.to_string()),
-                ..Default::default()
-            },
-        );
-        query_key.insert(
-            String::from("message_id"),
-            AttributeValue {
-                s: Some(post.message_id.clone().unwrap()),
-                ..Default::default()
-            },
-        );
-        if post.images.len() > 0 {
+        if &post.text != "" {
             query_key.insert(
-                String::from("images"),
+                String::from("text"),
                 AttributeValue {
-                    ss: Some(post.images.clone()),
+                    s: Some(post.text.to_string()),
                     ..Default::default()
                 },
             );
         }
-        if post.image_ids.len() > 0 {
+        if let Some(tg_id) = &post.tg_id {
+            if tg_id != "" {
+                query_key.insert(
+                    String::from("message_id"),
+                    AttributeValue {
+                        s: Some(tg_id.clone()),
+                        ..Default::default()
+                    },
+                );
+            }
+        }
+        if post.images.len() > 0 {
+            let mut urls = vec![];
+            let mut ids = vec![];
+
+            for image in &post.images {
+                urls.push(String::from(&image.url));
+                if let Some(val) = &image.tg_id {
+                    ids.push(val.into());
+                }
+            }
+
+            query_key.insert(
+                String::from("images"),
+                AttributeValue {
+                    ss: Some(urls.clone()),
+                    ..Default::default()
+                },
+            );
             query_key.insert(
                 String::from("image_ids"),
                 AttributeValue {
-                    ss: Some(post.image_ids.clone()),
+                    ss: Some(ids.clone()),
                     ..Default::default()
                 },
             );
@@ -172,7 +186,7 @@ impl DynamoClient {
 }
 
 fn build_post(entry: std::collections::HashMap<String, AttributeValue>) -> Post {
-    let images = if let Some(val) = entry.get("images") {
+    let image_urls = if let Some(val) = entry.get("images") {
         val.ss.as_ref().unwrap().clone()
     } else {
         vec![]
@@ -184,12 +198,26 @@ fn build_post(entry: std::collections::HashMap<String, AttributeValue>) -> Post 
         vec![]
     };
 
+    let mut images = Vec::new();
+    for (url, tg_id) in image_urls.iter().zip(image_ids.iter()) {
+        let image = Image {
+            url: url.into(),
+            tg_id: Some(tg_id.into()),
+        };
+        images.push(image);
+    }
+
+    let text = if let Some(val) = entry.get("text") {
+        val.s.as_ref().unwrap()
+    } else {
+        ""
+    };
+
     Post {
         id: String::from(entry.get("id").unwrap().s.as_ref().unwrap()),
-        text: String::from(entry.get("text").unwrap().s.as_ref().unwrap()),
+        text: String::from(text),
         images,
-        image_ids,
-        message_id: Some(String::from(
+        tg_id: Some(String::from(
             entry.get("message_id").unwrap().s.as_ref().unwrap(),
         )),
     }

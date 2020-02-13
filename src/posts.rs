@@ -2,16 +2,22 @@ use std::error::Error;
 
 use html2md::parse_html;
 use log::{debug, info};
+use regex::Regex;
 use reqwest::Client;
 use scraper::{Html, Selector};
 
 #[derive(Debug)]
 pub struct Post {
     pub id: String,
+    pub tg_id: Option<String>,
     pub text: String,
-    pub images: Vec<String>,
-    pub message_id: Option<String>,
-    pub image_ids: Vec<String>,
+    pub images: Vec<Image>,
+}
+
+#[derive(Debug)]
+pub struct Image {
+    pub url: String,
+    pub tg_id: Option<String>,
 }
 
 const POSTS_SELECTOR: &str = "#pagelet_timeline_main_column > div:first-of-type > div:nth-child(2) > div:first-of-type > div";
@@ -54,8 +60,12 @@ pub async fn fetch_posts(url: &str) -> Result<Vec<Post>, Box<dyn Error>> {
             continue;
         }
 
-        let post_id: &str = post_id.split(";").collect::<Vec<&str>>()[1];
         info!("post_id: {}", post_id);
+        let post_id: Vec<&str> = post_id.split(";").collect::<Vec<&str>>();
+        if post_id.len() < 2 {
+            continue;
+        }
+        let post_id = post_id[1];
 
         let mut text_parts: Vec<String> = Vec::new();
 
@@ -65,39 +75,53 @@ pub async fn fetch_posts(url: &str) -> Result<Vec<Post>, Box<dyn Error>> {
         let text = text_parts.concat();
         let parsed_text = parse_html(&text);
 
-        let mut images: Vec<String> = Vec::new();
+        let mut images: Vec<Image> = Vec::new();
         for img_container in post.select(&image_container_selector) {
             for img_element in img_container.select(&image_selector) {
                 let img_src = img_element.value().attr("src").unwrap();
                 info!("img src: {}", img_src);
-                images.push(String::from(img_src));
+                let image = Image {
+                    url: String::from(img_src),
+                    tg_id: None,
+                };
+                images.push(image);
             }
         }
 
         debug!("parsed html into markdown: {}", parsed_text);
 
+        let parsed_text = parsed_text
+            .replace("\\-", "-")
+            .replace("...", "")
+            .replace(
+                format!("[See more](/kantineKliversala/posts/{})", post_id).as_str(),
+                "",
+            )
+            .replace(
+                format!("[See More](/kantineKliversala/posts/{})", post_id).as_str(),
+                "",
+            );
+
+        let parsed_text = remove_markdown_links(&parsed_text);
+
         let post = Post {
             id: format!("{}", post_id).replace("\"", ""),
-            text: parsed_text
-                .replace("\\-", "-")
-                .replace("...", "")
-                .replace(
-                    format!("[See more](/kantineKliversala/posts/{})", post_id).as_str(),
-                    "",
-                )
-                .replace(
-                    format!("[See More](/kantineKliversala/posts/{})", post_id).as_str(),
-                    "",
-                ),
+            text: parsed_text,
             images,
-            message_id: None,
-            image_ids: Vec::new(),
+            tg_id: None,
         };
 
         result.push(post);
     }
 
     Ok(result)
+}
+
+fn remove_markdown_links(text: &str) -> String {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"\[(.*?)\]\(.*?\)").unwrap();
+    }
+    return String::from(RE.replace_all(text, "$1"));
 }
 
 #[cfg(test)]
@@ -119,16 +143,15 @@ mod tests {
             .unwrap();
         assert_eq!(result.len(), 19);
         assert_eq!(result[0].id, "2471140943148075");
-        assert_eq!(result[0].text, "Pusdienu piedāvājums 7. februārī.  \n Dienas piedāvājums pieejams 11:00-16:00\n\n Mazais pusdienu piedāvājums:  \n🍗v/g saldakābā mērcē vai 🥘makaroni \"Jūrnieku gaumē\", vai 🌽kuskuss ar dārzeņiem  \n🥒 dienas salāti  \n🍷 dzērveņu dzēriens   \n💸 3,90€\n\n Lielais pusdienu piedāvājums:  \n🍲frikadeļu zupa vai dārzeņu krēmzupa, vai 🍰 dienas deserts  \n🍗v/g saldskābā mērcē vai 🥘makaroni \"Jūrnieku gaumē\", vai 🌽kuskuss ar dārzeņiem  \n🥒 dienas salāti  \n🍷 dzērveņu dzēriens   \n💸 4,60€\n\n Labu apetīti!\n\n[Skatīt vairāk]()");
-        let images: Vec<String> = Vec::new();
-        assert_eq!(result[0].images, images);
+        assert_eq!(result[0].text, "Pusdienu piedāvājums 7. februārī.  \n Dienas piedāvājums pieejams 11:00-16:00\n\n Mazais pusdienu piedāvājums:  \n🍗v/g saldakābā mērcē vai 🥘makaroni \"Jūrnieku gaumē\", vai 🌽kuskuss ar dārzeņiem  \n🥒 dienas salāti  \n🍷 dzērveņu dzēriens   \n💸 3,90€\n\n Lielais pusdienu piedāvājums:  \n🍲frikadeļu zupa vai dārzeņu krēmzupa, vai 🍰 dienas deserts  \n🍗v/g saldskābā mērcē vai 🥘makaroni \"Jūrnieku gaumē\", vai 🌽kuskuss ar dārzeņiem  \n🥒 dienas salāti  \n🍷 dzērveņu dzēriens   \n💸 4,60€\n\n Labu apetīti!\n\nSkatīt vairāk");
+        assert_eq!(result[0].images.len(), 0);
 
         assert_eq!(result[5].id, "2465890140339822");
         assert_eq!(
             result[5].text,
             "Nāc un piedalies arī Tu, jau no 01.02.2020! 🥘🍴☕"
         );
-        assert_eq!(result[5].images, vec![String::from("https://scontent.frix3-1.fna.fbcdn.net/v/t1.0-0/p526x296/84437983_2465890103673159_2752238738611372032_o.jpg?_nc_cat=106&_nc_ohc=YlgO1JJVbLQAX8aROMV&_nc_ht=scontent.frix3-1.fna&_nc_tp=6&oh=a9a1e00cf9bf5ce65254d36f7ef27590&oe=5EC77203")]);
+        assert_eq!(result[5].images[0].url, String::from("https://scontent.frix3-1.fna.fbcdn.net/v/t1.0-0/p526x296/84437983_2465890103673159_2752238738611372032_o.jpg?_nc_cat=106&_nc_ohc=YlgO1JJVbLQAX8aROMV&_nc_ht=scontent.frix3-1.fna&_nc_tp=6&oh=a9a1e00cf9bf5ce65254d36f7ef27590&oe=5EC77203"));
         _m.assert();
     }
 
@@ -176,5 +199,26 @@ mod tests {
         let result = format!("{}", result);
         assert_eq!(result, "error");
         _m.assert();
+    }
+
+    #[test]
+    fn remove_markdown_links_single_works() {
+        let test_string = r#"test [Skatīt vairāk](/kantineKliversala/posts/2457708144491355)"#;
+        let result = r#"test Skatīt vairāk"#;
+        assert_eq!(result, remove_markdown_links(test_string));
+    }
+
+    #[test]
+    fn remove_markdown_links_multiple_works() {
+        let test_string = r#"test [Skatīt vairāk](/kantineKliversala/posts/2457708144491355) [Skatīt vairāk](/kantineKliversala/posts/2457708144491355)"#;
+        let result = r#"test Skatīt vairāk Skatīt vairāk"#;
+        assert_eq!(result, remove_markdown_links(test_string));
+    }
+
+    #[test]
+    fn remove_markdown_links_works_more() {
+        let test_string = r#"test Skatīt vairāk"#;
+        let result = r#"test Skatīt vairāk"#;
+        assert_eq!(result, remove_markdown_links(test_string));
     }
 }

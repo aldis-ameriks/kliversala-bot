@@ -1,9 +1,11 @@
+use log::Level;
 use std::env;
 
 use kliversala_bot::{dynamo_db, posts, process_posts, telegram};
 
 #[tokio::test]
 async fn process_posts_success() {
+    simple_logger::init_with_level(Level::Info).expect("Failed to init logger");
     let token = env::var("TG_TOKEN").expect("Missing TG_TOKEN env var");
     let chat_id = env::var("TG_CHAT_ID").expect("Missing TG_CHAT_ID env var");
     let table_name = env::var("TABLE_NAME").expect("Missing TABLE_NAME env var");
@@ -15,9 +17,14 @@ async fn process_posts_success() {
     delete_posts(&dynamo_client, &posts).await;
 
     process_posts().await.unwrap();
-
     let posts = dynamo_client.scan_posts().await.unwrap();
     assert_eq!(19, posts.len());
+
+    // Running second time skips posts that are already sent
+    process_posts().await.unwrap();
+    let posts = dynamo_client.scan_posts().await.unwrap();
+    assert_eq!(19, posts.len());
+
     delete_posts(&dynamo_client, &posts).await;
     delete_messages(&telegram_client, &posts).await;
 }
@@ -33,12 +40,12 @@ async fn delete_posts(client: &dynamo_db::DynamoClient, posts: &[posts::Post]) {
 async fn delete_messages(client: &telegram::TelegramClient, posts: &[posts::Post]) {
     for post in posts {
         client
-            .delete_message(&post.message_id.as_ref().unwrap())
+            .delete_message(&post.tg_id.as_ref().unwrap())
             .await
             .expect("Failed to delete message");
-        for image_id in &post.image_ids {
+        for posts::Image { url: _url, tg_id } in &post.images {
             client
-                .delete_message(&image_id)
+                .delete_message(&tg_id.as_ref().unwrap())
                 .await
                 .expect("Failed to delete image");
         }
