@@ -213,12 +213,16 @@ fn build_post(entry: std::collections::HashMap<String, AttributeValue>) -> Post 
         ""
     };
 
+    let tg_id = if let Some(val) = entry.get("message_id") {
+        Some(String::from(val.s.as_ref().unwrap()))
+    } else {
+        None
+    };
+
     Post {
         id: String::from(entry.get("id").unwrap().s.as_ref().unwrap()),
         text: String::from(text),
         images,
-        tg_id: Some(String::from(
-            entry.get("message_id").unwrap().s.as_ref().unwrap(),
-        )),
+        tg_id,
     }
 }
