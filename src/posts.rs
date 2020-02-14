@@ -216,7 +216,7 @@ mod tests {
     }
 
     #[test]
-    fn remove_markdown_links_works_more() {
+    fn remove_markdown_links_works_without_links() {
         let test_string = r#"test Skatīt vairāk"#;
         let result = r#"test Skatīt vairāk"#;
         assert_eq!(result, remove_markdown_links(test_string));
