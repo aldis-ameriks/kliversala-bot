@@ -1,7 +1,7 @@
 use log::Level;
 use std::env;
 
-use kliversala_bot::{dynamo_db, posts, process_posts, telegram};
+use kliversala_bot::{dynamo_db, sources, process_posts, telegram};
 
 #[tokio::test]
 async fn process_posts_success() {
@@ -29,7 +29,7 @@ async fn process_posts_success() {
     delete_messages(&telegram_client, &posts).await;
 }
 
-async fn delete_posts(client: &dynamo_db::DynamoClient, posts: &[posts::Post]) {
+async fn delete_posts(client: &dynamo_db::DynamoClient, posts: &[sources::Post]) {
     for post in posts {
         client.delete_post(&post.id).await.unwrap();
     }
@@ -37,13 +37,13 @@ async fn delete_posts(client: &dynamo_db::DynamoClient, posts: &[posts::Post]) {
     assert_eq!(0, posts.len());
 }
 
-async fn delete_messages(client: &telegram::TelegramClient, posts: &[posts::Post]) {
+async fn delete_messages(client: &telegram::TelegramClient, posts: &[sources::Post]) {
     for post in posts {
         client
             .delete_message(&post.tg_id.as_ref().unwrap())
             .await
             .expect("Failed to delete message");
-        for posts::Image { url: _url, tg_id } in &post.images {
+        for sources::Image { url: _url, tg_id } in &post.images {
             client
                 .delete_message(&tg_id.as_ref().unwrap())
                 .await

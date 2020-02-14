@@ -1,24 +1,11 @@
 use std::error::Error;
 
+use crate::sources::{Image, Post};
 use html2md::parse_html;
 use log::{debug, info};
 use regex::Regex;
 use reqwest::Client;
 use scraper::{Html, Selector};
-
-#[derive(Debug)]
-pub struct Post {
-    pub id: String,
-    pub tg_id: Option<String>,
-    pub text: String,
-    pub images: Vec<Image>,
-}
-
-#[derive(Debug)]
-pub struct Image {
-    pub url: String,
-    pub tg_id: Option<String>,
-}
 
 const POSTS_SELECTOR: &str = "#pagelet_timeline_main_column > div:first-of-type > div:nth-child(2) > div:first-of-type > div";
 const IMAGE_CONTAINER_SELECTOR: &str = concat!(

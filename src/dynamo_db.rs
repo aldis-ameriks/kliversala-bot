@@ -7,7 +7,7 @@ use rusoto_dynamodb::{
     GetItemInput, PutItemError, PutItemInput, ScanError, ScanInput,
 };
 
-use crate::posts::{Image, Post};
+use crate::sources::{Image, Post};
 
 pub struct DynamoClient {
     client: DynamoDbClient,

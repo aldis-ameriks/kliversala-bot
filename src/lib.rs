@@ -1,37 +1,19 @@
 #[macro_use]
 extern crate lazy_static;
 
+pub mod dynamo_db;
+pub mod sources;
+pub mod telegram;
+
 use std::env;
 use std::error::Error;
 
 use log::{error, info};
 
-use async_trait::async_trait;
 use dynamo_db::DynamoClient;
-use posts::fetch_posts;
 use telegram::TelegramClient;
 
-use crate::posts::Post;
-
-pub mod dynamo_db;
-pub mod posts;
-pub mod telegram;
-
-#[async_trait]
-trait PostSource {
-    async fn fetch_posts(&self) -> Result<Vec<Post>, Box<dyn Error>>;
-}
-
-struct FacebookSource {
-    url: String,
-}
-
-#[async_trait]
-impl PostSource for FacebookSource {
-    async fn fetch_posts(&self) -> Result<Vec<Post>, Box<dyn Error>> {
-        fetch_posts(&self.url).await
-    }
-}
+use sources::{FacebookSource, PostSource};
 
 pub async fn process_posts() -> Result<(), Box<dyn Error>> {
     let token = env::var("TG_TOKEN").expect("Missing TG_TOKEN env var");
@@ -40,9 +22,9 @@ pub async fn process_posts() -> Result<(), Box<dyn Error>> {
 
     let dynamo_client = DynamoClient::new(table_name);
     let telegram_client = TelegramClient::new(token, chat_id);
-    let post_fetchers = vec![FacebookSource {
-        url: String::from("https://www.facebook.com/pg/kantineKliversala/posts/"),
-    }];
+    let post_fetchers = vec![FacebookSource::new(
+        "https://www.facebook.com/pg/kantineKliversala/posts/",
+    )];
     process_posts_with(&post_fetchers, &dynamo_client, &telegram_client).await
 }
 
