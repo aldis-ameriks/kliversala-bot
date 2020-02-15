@@ -1,7 +1,7 @@
 use log::Level;
 use std::env;
 
-use kliversala_bot::{dynamo_db, sources, process_posts, telegram};
+use kliversala_bot::{dynamo_db, process_posts, sources, telegram};
 
 #[tokio::test]
 async fn process_posts_success() {

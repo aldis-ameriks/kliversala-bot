@@ -22,7 +22,7 @@ pub async fn process_posts() -> Result<(), Box<dyn Error>> {
 
     let dynamo_client = DynamoClient::new(table_name);
     let telegram_client = TelegramClient::new(token, chat_id);
-    let post_fetchers = vec![FacebookSource::new(
+    let post_fetchers = [FacebookSource::new(
         "https://www.facebook.com/pg/kantineKliversala/posts/",
     )];
     process_posts_with(&post_fetchers, &dynamo_client, &telegram_client).await
