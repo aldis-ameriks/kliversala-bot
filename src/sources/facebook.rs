@@ -1,11 +1,12 @@
 use std::error::Error;
 
-use crate::sources::{Image, Post};
 use html2md::parse_html;
 use log::{debug, info};
 use regex::Regex;
 use reqwest::Client;
 use scraper::{Html, Selector};
+
+use crate::sources::{Image, Post};
 
 const POSTS_SELECTOR: &str = "#pagelet_timeline_main_column > div:first-of-type > div:nth-child(2) > div:first-of-type > div";
 const IMAGE_CONTAINER_SELECTOR: &str = concat!(
