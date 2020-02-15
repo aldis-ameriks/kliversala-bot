@@ -21,6 +21,9 @@ pub struct Image {
 
 #[async_trait]
 pub trait PostSource {
+    type Source;
+
+    fn new(url: &str) -> Self::Source;
     async fn fetch_posts(&self) -> Result<Vec<Post>, Box<dyn Error>>;
 }
 
@@ -28,16 +31,15 @@ pub struct FacebookSource {
     url: String,
 }
 
-impl FacebookSource {
-    pub fn new(url: &str) -> FacebookSource {
+#[async_trait]
+impl PostSource for FacebookSource {
+    type Source = FacebookSource;
+
+    fn new(url: &str) -> FacebookSource {
         FacebookSource {
             url: String::from(url),
         }
     }
-}
-
-#[async_trait]
-impl PostSource for FacebookSource {
     async fn fetch_posts(&self) -> Result<Vec<Post>, Box<dyn Error>> {
         fetch_posts(&self.url).await
     }
