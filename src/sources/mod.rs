@@ -1,7 +1,6 @@
 use std::error::Error;
 
 use async_trait::async_trait;
-use facebook::fetch_posts;
 
 pub mod facebook;
 
@@ -25,22 +24,4 @@ pub trait PostSource {
 
     fn new(url: &str) -> Self::Source;
     async fn fetch_posts(&self) -> Result<Vec<Post>, Box<dyn Error>>;
-}
-
-pub struct FacebookSource {
-    url: String,
-}
-
-#[async_trait]
-impl PostSource for FacebookSource {
-    type Source = FacebookSource;
-
-    fn new(url: &str) -> FacebookSource {
-        FacebookSource {
-            url: String::from(url),
-        }
-    }
-    async fn fetch_posts(&self) -> Result<Vec<Post>, Box<dyn Error>> {
-        fetch_posts(&self.url).await
-    }
 }

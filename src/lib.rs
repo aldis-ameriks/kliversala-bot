@@ -1,18 +1,19 @@
 #[macro_use]
 extern crate lazy_static;
 
-pub mod dynamo_db;
-pub mod sources;
-pub mod telegram;
-
 use std::env;
 use std::error::Error;
 
 use log::{error, info};
 
 use dynamo_db::DynamoClient;
-use sources::{FacebookSource, PostSource};
+use sources::facebook::FacebookSource;
+use sources::PostSource;
 use telegram::TelegramClient;
+
+pub mod dynamo_db;
+pub mod sources;
+pub mod telegram;
 
 pub async fn process_posts() -> Result<(), Box<dyn Error>> {
     let token = env::var("TG_TOKEN").expect("Missing TG_TOKEN env var");

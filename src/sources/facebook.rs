@@ -6,7 +6,9 @@ use regex::Regex;
 use reqwest::Client;
 use scraper::{Html, Selector};
 
-use crate::sources::{Image, Post};
+use async_trait::async_trait;
+
+use crate::sources::{Image, Post, PostSource};
 
 const POSTS_SELECTOR: &str = "#pagelet_timeline_main_column > div:first-of-type > div:nth-child(2) > div:first-of-type > div";
 const IMAGE_CONTAINER_SELECTOR: &str = concat!(
@@ -17,7 +19,25 @@ const ID_SELECTOR: &str = r#"div[data-testid="story-subtitle"]"#;
 const TEXT_SELECTOR: &str = r#"div[data-testid="post_message"] > *:first-child"#;
 const IMAGE_SELECTOR: &str = "img";
 
-pub async fn fetch_posts(url: &str) -> Result<Vec<Post>, Box<dyn Error>> {
+pub struct FacebookSource {
+    url: String,
+}
+
+#[async_trait]
+impl PostSource for FacebookSource {
+    type Source = FacebookSource;
+
+    fn new(url: &str) -> FacebookSource {
+        FacebookSource {
+            url: String::from(url),
+        }
+    }
+    async fn fetch_posts(&self) -> Result<Vec<Post>, Box<dyn Error>> {
+        fetch_posts(&self.url).await
+    }
+}
+
+async fn fetch_posts(url: &str) -> Result<Vec<Post>, Box<dyn Error>> {
     let resp = Client::new()
         .get(url)
         .header("user-agent", "rusty")
