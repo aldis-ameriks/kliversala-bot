@@ -9,7 +9,7 @@ use log::{error, info};
 use dynamo_db::DynamoClient;
 use sources::facebook::FacebookSource;
 use sources::PostSource;
-use telegram::TelegramClient;
+use telegram::client::TelegramClient;
 
 pub mod dynamo_db;
 pub mod sources;

@@ -1,7 +1,8 @@
-use log::Level;
 use std::env;
 
-use kliversala_bot::{dynamo_db, process_posts, sources, telegram};
+use log::Level;
+
+use kliversala_bot::{dynamo_db::DynamoClient, process_posts, sources, telegram::client::TelegramClient};
 
 #[tokio::test]
 async fn process_posts_success() {
@@ -10,8 +11,8 @@ async fn process_posts_success() {
     let chat_id = env::var("TG_CHAT_ID").expect("Missing TG_CHAT_ID env var");
     let table_name = env::var("TABLE_NAME").expect("Missing TABLE_NAME env var");
 
-    let dynamo_client = dynamo_db::DynamoClient::new(table_name);
-    let telegram_client = telegram::TelegramClient::new(token, chat_id);
+    let dynamo_client = DynamoClient::new(table_name);
+    let telegram_client = TelegramClient::new(token, chat_id);
 
     let posts = dynamo_client.scan_posts().await.unwrap();
     delete_posts(&dynamo_client, &posts).await;
@@ -29,7 +30,7 @@ async fn process_posts_success() {
     delete_messages(&telegram_client, &posts).await;
 }
 
-async fn delete_posts(client: &dynamo_db::DynamoClient, posts: &[sources::Post]) {
+async fn delete_posts(client: &DynamoClient, posts: &[sources::Post]) {
     for post in posts {
         client.delete_post(&post.id).await.unwrap();
     }
@@ -37,7 +38,7 @@ async fn delete_posts(client: &dynamo_db::DynamoClient, posts: &[sources::Post])
     assert_eq!(0, posts.len());
 }
 
-async fn delete_messages(client: &telegram::TelegramClient, posts: &[sources::Post]) {
+async fn delete_messages(client: &TelegramClient, posts: &[sources::Post]) {
     for post in posts {
         client
             .delete_message(&post.tg_id.as_ref().unwrap())

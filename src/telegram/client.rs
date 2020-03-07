@@ -4,11 +4,7 @@ use reqwest::{Client, Response};
 use serde::Serialize;
 use serde_json::{from_str, Value};
 
-pub struct TelegramClient {
-    token: String,
-    chat_id: String,
-    domain: String,
-}
+use super::error::TelegramError;
 
 #[derive(Serialize)]
 struct Message<'a> {
@@ -22,6 +18,12 @@ struct Image<'a> {
     chat_id: &'a str,
     photo: &'a str,
     disable_notification: bool,
+}
+
+pub struct TelegramClient {
+    token: String,
+    chat_id: String,
+    domain: String,
 }
 
 impl TelegramClient {
@@ -42,7 +44,7 @@ impl TelegramClient {
         }
     }
 
-    pub async fn send_message(&self, text: &str) -> Result<String, Box<dyn Error>> {
+    pub async fn send_message(&self, text: &str) -> Result<String, TelegramError> {
         let message = Message {
             chat_id: &self.chat_id,
             text,
@@ -62,7 +64,7 @@ impl TelegramClient {
         }
     }
 
-    pub async fn send_image(&self, image_url: &str) -> Result<String, Box<dyn Error>> {
+    pub async fn send_image(&self, image_url: &str) -> Result<String, TelegramError> {
         let image = Image {
             chat_id: &self.chat_id,
             photo: image_url,
@@ -81,7 +83,7 @@ impl TelegramClient {
         }
     }
 
-    pub async fn delete_message(&self, message_id: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn delete_message(&self, message_id: &str) -> Result<(), TelegramError> {
         let url = format!("{}/bot{}/deleteMessage", self.domain, self.token);
         let resp: Response = Client::new()
             .post(&url)
@@ -142,9 +144,9 @@ impl TelegramClient {
         "#,
                 &self.chat_id, message_id, image_url
             )
-            .as_str(),
+                .as_str(),
         )
-        .unwrap();
+            .unwrap();
         let resp: Response = Client::new().post(&url).json(&body).send().await?;
 
         if resp.status().is_success() {
@@ -157,7 +159,7 @@ impl TelegramClient {
 
 #[cfg(test)]
 mod tests {
-    use mockito::{mock, server_url, Matcher};
+    use mockito::{Matcher, mock, server_url};
     use serde_json::json;
 
     use super::*;
@@ -417,9 +419,9 @@ mod tests {
                 "#,
                 CHAT_ID, message_id, image_url
             )
-            .as_str(),
+                .as_str(),
         )
-        .unwrap();
+            .unwrap();
 
         let _m = mock("POST", format!("/bot{}/editMessageMedia", TOKEN).as_str())
             .match_body(Matcher::Json(body))
@@ -464,9 +466,9 @@ mod tests {
                 "#,
                 CHAT_ID, message_id, image_url
             )
-            .as_str(),
+                .as_str(),
         )
-        .unwrap();
+            .unwrap();
 
         let _m = mock("POST", format!("/bot{}/editMessageMedia", TOKEN).as_str())
             .match_body(Matcher::Json(body))
