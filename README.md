@@ -1,4 +1,4 @@
-# Kliversala Telegram Bot
+# "Kliversala" Telegram Bot
 > Lets you know what's on the lunch menu everyday.
 
 ![](https://github.com/aldis-ameriks/kliversala-bot/workflows/build-test-release/badge.svg?branch=master)
