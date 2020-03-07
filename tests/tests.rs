@@ -3,6 +3,8 @@ use std::env;
 use log::Level;
 
 use kliversala_bot::{dynamo_db::DynamoClient, process_posts, sources, telegram::client::TelegramClient};
+use std::thread::sleep;
+use std::time::Duration;
 
 #[tokio::test]
 async fn process_posts_success() {
@@ -33,6 +35,7 @@ async fn process_posts_success() {
 async fn delete_posts(client: &DynamoClient, posts: &[sources::Post]) {
     for post in posts {
         client.delete_post(&post.id).await.unwrap();
+        sleep(Duration::from_millis(200)); // Throttling to avoid hitting limits
     }
     let posts = client.scan_posts().await.unwrap();
     assert_eq!(0, posts.len());
