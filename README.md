@@ -7,4 +7,6 @@
 
 Reads "Kantīne Klīversala" feed containing daily lunch menu and forwards it to a public [telegram channel](https://t.me/kliversala).
 
-![](bot.png)
+<p align="center">
+  <img src="bot.png" width="668">
+</p>
