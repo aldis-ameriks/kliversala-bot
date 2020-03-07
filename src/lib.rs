@@ -22,19 +22,19 @@ pub async fn process_posts() -> Result<(), Box<dyn Error>> {
 
     let dynamo_client = DynamoClient::new(table_name);
     let telegram_client = TelegramClient::new(token, chat_id);
-    let post_fetchers = [FacebookSource::new(
+    let post_sources = [FacebookSource::new(
         "https://www.facebook.com/pg/kantineKliversala/posts/",
     )];
-    process_posts_with(&post_fetchers, &dynamo_client, &telegram_client).await
+    process_posts_with(&post_sources, &dynamo_client, &telegram_client).await
 }
 
 async fn process_posts_with<T: PostSource>(
-    post_fetchers: &[T],
+    post_sources: &[T],
     dynamo_client: &DynamoClient,
     telegram_client: &TelegramClient,
 ) -> Result<(), Box<dyn Error>> {
-    for post_fetcher in post_fetchers {
-        let posts = post_fetcher.fetch_posts().await?;
+    for post_source in post_sources {
+        let posts = post_source.fetch_posts().await?;
         info!("found {} posts", posts.len());
 
         for mut post in posts {
