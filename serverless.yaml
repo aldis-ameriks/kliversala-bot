@@ -10,7 +10,7 @@ provider:
   name: aws
   runtime: rust
   memorySize: 128
-  timeout: 30
+  timeout: 300
   region: eu-west-1
   stage: ${opt:stage, 'dev'}
   versionFunctions: false
