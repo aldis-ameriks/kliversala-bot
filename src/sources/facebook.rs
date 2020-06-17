@@ -101,12 +101,13 @@ async fn fetch_posts(url: &str) -> Result<Vec<Post>, Box<dyn Error>> {
         let parsed_text = parsed_text
             .replace("\\-", "-")
             .replace("...", "")
+            .replace("See More", "")
             .replace(
-                format!("[See more](/kantineKliversala/posts/{})", post_id).as_str(),
+                format!("[See more](/PusdienotavaAnnasDarzs/posts/{})", post_id).as_str(),
                 "",
             )
             .replace(
-                format!("[See More](/kantineKliversala/posts/{})", post_id).as_str(),
+                format!("[See More](/PusdienotavaAnnasDarzs/posts/{})", post_id).as_str(),
                 "",
             );
 

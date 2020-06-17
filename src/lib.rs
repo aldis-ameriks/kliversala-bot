@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate lazy_static;
 
-use std::env;
+use std::{env, thread};
 use std::error::Error;
 
 use log::{error, info};
@@ -10,6 +10,7 @@ use dynamo_db::DynamoClient;
 use sources::facebook::FacebookSource;
 use sources::PostSource;
 use telegram::client::TelegramClient;
+use std::time::Duration;
 
 pub mod dynamo_db;
 pub mod sources;
@@ -23,7 +24,7 @@ pub async fn process_posts() -> Result<(), Box<dyn Error>> {
     let dynamo_client = DynamoClient::new(table_name);
     let telegram_client = TelegramClient::new(token, chat_id);
     let post_sources = [FacebookSource::new(
-        "https://www.facebook.com/pg/kantineKliversala/posts/",
+        "https://www.facebook.com/pg/PusdienotavaAnnasDarzs/posts/",
     )];
     process_posts_with(&post_sources, &dynamo_client, &telegram_client).await
 }
@@ -97,6 +98,7 @@ async fn process_posts_with<T: PostSource>(
                     }
                 }
             }
+            thread::sleep(Duration::from_secs(1));
         }
     }
     Ok(())

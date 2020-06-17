@@ -2,7 +2,7 @@ use std::env;
 
 use log::Level;
 
-use kliversala_bot::{dynamo_db::DynamoClient, process_posts, sources, telegram::client::TelegramClient};
+use annasdarzs_bot::{dynamo_db::DynamoClient, process_posts, sources, telegram::client::TelegramClient};
 use std::thread::sleep;
 use std::time::Duration;
 

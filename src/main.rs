@@ -4,7 +4,7 @@ use log::{error, info};
 use serde_json::Value;
 use tokio::runtime::Runtime;
 
-use kliversala_bot::process_posts;
+use annasdarzs_bot::process_posts;
 
 fn main() {
     simple_logger::init_with_level(Level::Info).expect("Failed to init logger");
