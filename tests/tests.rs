@@ -21,12 +21,12 @@ async fn process_posts_success() {
 
     process_posts().await.unwrap();
     let posts = dynamo_client.scan_posts().await.unwrap();
-    assert_eq!(19, posts.len());
+    assert_eq!(18, posts.len());
 
     // Running second time skips posts that are already sent
     process_posts().await.unwrap();
     let posts = dynamo_client.scan_posts().await.unwrap();
-    assert_eq!(19, posts.len());
+    assert_eq!(18, posts.len());
 
     delete_posts(&dynamo_client, &posts).await;
     delete_messages(&telegram_client, &posts).await;
