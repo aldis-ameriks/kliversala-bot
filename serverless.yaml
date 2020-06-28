@@ -32,7 +32,7 @@ functions:
   kliversala-bot:
     handler: kliversala-bot
     events:
-      - schedule: cron(30 * * * ? *)
+      - schedule: cron(0/30 9-18 * * ? *)
 
 resources:
   Resources:
